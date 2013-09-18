@@ -1,0 +1,25 @@
+Resources count = 4
+Resources types count = 2
+Type 1 (2 resources, 2 cores)
+Performance (GFlops): 41
+Resource 1
+Core 1 1
+25024  32084
+Core 2 0
+Resource 2
+Core 1 1
+19988  22731
+Core 2 0
+Type 2 (2 resources, 2 cores)
+Performance (GFlops): 35
+Resource 1
+Core 1 2
+32568  40230
+41329  43188
+Core 2 2
+28318  30918
+36669  36695
+Resource 2
+Core 1 1
+2571  9948
+Core 2 0
