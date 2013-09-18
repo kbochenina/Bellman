@@ -14,9 +14,11 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <iterator>
 #include "boost/tuple/tuple.hpp"
 #include "boost/tuple/tuple_io.hpp"
 #include "boost/tuple/tuple_comparison.hpp"
+
 //#include "boost/bind.hpp"
 
 

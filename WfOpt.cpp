@@ -6,9 +6,11 @@
 #include "Package.h"
 #include "Model.h"
 
+	int T, delta, stages;
+	vector<int> stageBorders;
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int T, delta;
 	string fileResources, fileWorkflows;
 	if (argc == 1) {
 		T = 43200;
@@ -16,24 +18,25 @@ int _tmain(int argc, _TCHAR* argv[])
 		fileResources = "res_t2_p0.5_r2_c2_2";
 		fileWorkflows = "n-10_f-0.2_d-0.2_r-0.8_c-1_j-2.1";
 	}
-
+	stages = T/delta;
+	for (int i = 0; i <= T; i+=delta) stageBorders.push_back(i);
 	double start = clock();
 	 
-	Model m (T, delta);
+	Model m;
 	m.Init(fileResources, fileWorkflows);
 	
 
-	m.SetFullState();
-	cout << "Time of set full states " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
-	//m.GetStageInformation(8);
-	//m.Simple();
-	int stages = T/delta-1;
-	for (int i = stages; i > 0; i--)
-		m.GetStageInformation(i);
-	/*m.GetStageInformation(3);
-	m.GetStageInformation(2);
-	m.GetStageInformation(1);*/
-	m.DirectBellman();
+	//m.SetFullState();
+	//cout << "Time of set full states " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
+	////m.GetStageInformation(8);
+	////m.Simple();
+	//int stages = T/delta-1;
+	//for (int i = stages; i > 0; i--)
+	//	m.GetStageInformation(i);
+	///*m.GetStageInformation(3);
+	//m.GetStageInformation(2);
+	//m.GetStageInformation(1);*/
+	//m.DirectBellman();
 	//cout << "Max efficiency: " << m.GetMaxEfficiency() << endl;
 	//m.Zhadina();
 	//m.GetFullState("fullState.txt");

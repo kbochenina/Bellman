@@ -1,7 +1,10 @@
 #pragma once
-#include "Tree.h"
-#include "Node.h"
+
+
 #include "Workflow.h"
+#include "ResourceType.h"
+
+#include "Node.h"
 #include "Package.h"
 
 typedef tuple <int,int,int> OnePackageControl; // (number of package, number of node, core count)
@@ -16,18 +19,26 @@ typedef vector <StateInformation> StageInformation;
 typedef vector <StageInformation> BackBellmanInfo;
 typedef multimap<int, pair<int,int> > WorkflowRepeatChanges; // (number of fullstate,number of state, repeatCountDecrement)
 
+extern int T, delta, stages;
+extern vector<int> stageBorders;
 
 class Model
 {
+	// fields
+	vector <Workflow*> Workflows;
+	std::vector <ResourceType*> Resources;
+	std::vector <int> forcedBricks;
+	// methods
+	void InitResources(string);
+	void InitWorkflows(string);
+	void Model::SetForcedBricks();
+
+
 	vector <pair<int,int>> diff;
 	float maxEfficiency ;
-	int T; // number of seconds
-	int delta; // length of time intervals
+	
 	vector <int> leftBorders;
 	vector <int> freeCores;
-	vector <Node*> Nodes;
-	vector <Workflow*> Workflows;
-	vector <Package*> Packages;
 	vector <State> States;
 	vector <int> repeatCounts;
 	State FullState;
@@ -37,7 +48,11 @@ class Model
 	vector <int> pControlNumbers;
 	NextStates FullNextState;
 	
+	vector <Node*> Nodes;
+	vector <Package*> Packages;
+	
 public:
+	Model(){for (int i = 0; i < T; i+= delta) leftBorders.push_back(i);}
 	int allCoresCount;
 	float koeff;
 	float Greedy(int uopt, float currentEff);
@@ -48,10 +63,11 @@ public:
 	}
 	void CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls);
 	void SetFreeCores(int tbegin);
-	Model(int t, int d){T = t; delta = d; for (int i = 0; i < T; i+= delta) leftBorders.push_back(i);}
+	
 	PossibleControls GetStateControls(int stateNumber, ofstream& file);
 	void GetOneStageControls(int tbegin);
 	void Init();
+	void Init (string resFile, string wfFile);
 	State GetStates(const char *filename, vector <int> packages, vector <int> freeCores, int workflowSize);
 	void OneStep(int periodNumber);
 	vector <int> GetUOptsByStateNumber(int stateNum, int tbegin, ofstream &file, float & ef); //returns vector <number of uopts>
