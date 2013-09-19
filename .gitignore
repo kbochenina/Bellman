@@ -13,6 +13,7 @@
 *.a
 
 *.opensdf
+*.sdf
 *.txt
 
 #Unused directories

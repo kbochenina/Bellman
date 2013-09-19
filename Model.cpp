@@ -21,8 +21,251 @@ void Model::Init (string resFile, string wfFile){
 	InitWorkflows(wfFile); cout << "Initialization of workflows ended" << endl;
 }
 
-void Model::InitWorkflows(string f){}
+void Model::InitWorkflows(string f){
+	try{
+		char second[21]; // enough to hold all numbers up to 64-bits
+		ifstream file(f, ifstream::in);
+		string errOpen = "File " + f + " was not open";
+		string errEarlyEnd = "Unexpected end of file " + f;
+		string errWrongFormat = "Wrong format in file " + f + " at line ";
+		string errPackagesCount = "Packages count cannot be less than 1";
+		string errCoresCount = "Cores count cannot be less than 1";
+		string errConnMatrix = "Wrong value in connectivity matrix";
+		string errWrongFormatFull = errWrongFormat;
+		if (file.fail()) throw errOpen;
 
+		string s, trim; int line = 0;
+		getline(file,s);
+		++line;
+		if (file.eof()) throw errEarlyEnd;
+		trim = "Workflows count = ";
+		size_t found = s.find(trim);
+		if (found != 0) {
+			sprintf(second, "%d", line);
+			errWrongFormatFull += second;
+			throw errWrongFormatFull;
+		}
+		s.erase(0,trim.size());
+		int workflowsCount = atoi(s.c_str());
+		vector <int> types; map <pair <int,int>, float> execTime; vector <Package*> pacs; 
+		vector <int> cCount; 
+		vector <vector <int>> connectMatrix;
+		int fullPackagesCount = 0;
+		for (int i = 0; i < workflowsCount; i++){
+			int packagesCount = 0;
+			getline(file,s);
+			++line;
+			if (file.eof()) throw errEarlyEnd;
+			
+			if ((found = s.find("(")) == std::string::npos){
+				sprintf(second, "%d", line);
+				errWrongFormatFull += second;
+				throw errWrongFormatFull;
+			}
+			s.erase(0,found+1);
+			istringstream iss(s);
+			iss >> packagesCount;
+			if (iss.fail()) {
+				sprintf(second, "%d", line);
+				errWrongFormatFull += second;
+				throw errWrongFormatFull;
+			}
+			if (packagesCount < 1) {
+				sprintf(second, "%d", i+1);
+				string beginStr = "Workflow ";
+				beginStr += second;
+				beginStr += " - ";
+				beginStr += errPackagesCount;
+				throw beginStr;
+			}
+			for (int j = 0; j < packagesCount; j++){
+				float alpha = 0.0; // part of consequentually executed code
+				++fullPackagesCount;
+				// Package [packageNumber]
+				getline(file,s);
+				if (file.eof()) throw errEarlyEnd;
+				++line;
+				// Alpha: [alpha value]
+				getline(file,s);
+				if (file.eof()) throw errEarlyEnd;
+				++line;
+				trim = "Alpha: ";
+				size_t found = s.find(trim);
+				if (found != 0) {
+					sprintf(second, "%d", line);
+					errWrongFormatFull += second;
+					throw errWrongFormatFull;
+				}
+				s.erase(0,trim.size());
+				iss.str(s);
+				iss.clear();
+				iss >> alpha;
+				if (iss.fail()) {
+					sprintf(second, "%d", line);
+					errWrongFormatFull += second;
+					throw errWrongFormatFull;
+				}
+				// Resource types: [resource types values]. -1 means all possible resources
+				getline(file,s);
+				if (file.eof()) throw errEarlyEnd;
+				++line;
+				trim = "Resources types: ";
+				found = s.find(trim);
+				if (found != 0) {
+					sprintf(second, "%d", line);
+					errWrongFormatFull += second;
+					throw errWrongFormatFull;
+				}
+				s.erase(0,trim.size());
+				iss.str(s);
+				iss.clear();
+				int typeNumber = 0;
+				string comma;
+				do{
+					comma = "";
+					iss >> typeNumber;
+					// if package can execute on all possible resources
+					if (typeNumber == -1){
+						for (int i = 0; i < Resources.size(); i++)
+							types.push_back(i+1);
+						break;
+					}
+					if (iss.fail()) {
+						sprintf(second, "%d", line);
+						errWrongFormatFull += second;
+						throw errWrongFormatFull;
+					}
+					types.push_back(typeNumber);
+					iss >> comma;
+				} while (comma==",");
+
+
+				
+				// Cores count: [cores count values]
+				getline(file,s);
+				if (file.eof()) throw errEarlyEnd;
+				++line;
+				trim = "Cores count: ";
+				found = s.find(trim);
+				if (found != 0) {
+					sprintf(second, "%d", line);
+					errWrongFormatFull += second;
+					throw errWrongFormatFull;
+				}
+				s.erase(0,trim.size());
+				int coresCount = 0;
+				iss.str(s);
+				iss.clear();
+				int coreCount = 0;
+				do{
+					comma = "";
+					iss >> coreCount;
+					if (iss.fail()) {
+						sprintf(second, "%d", line);
+						errWrongFormatFull += second;
+						throw errWrongFormatFull;
+					}
+					cCount.push_back(coreCount);
+					iss >> comma;
+				} while (comma==",");
+				
+				if (cCount.size() < 1) {
+					sprintf(second, "%d", i+1);
+					string beginStr = "Workflow ";
+					beginStr += second;
+					beginStr += " - ";
+					beginStr += errCoresCount;
+					throw beginStr;
+				}
+				
+				// Computational amount: [amount value]
+				long int amount = 0;
+				getline(file,s);
+				if (file.eof()) throw errEarlyEnd;
+				++line;
+				trim = "Computation amount: ";
+				found = s.find(trim);
+				if (found != 0) {
+					sprintf(second, "%d", line);
+					errWrongFormatFull += second;
+					throw errWrongFormatFull;
+				}
+				s.erase(0,trim.size());
+				iss.str(s);
+				iss.clear();
+				iss >> amount;
+				if (iss.fail()) {
+					sprintf(second, "%d", line);
+					errWrongFormatFull += second;
+					throw errWrongFormatFull;
+				}
+
+				for (int k = 0; k < types.size(); k++){
+					for (int l = 0; l < cCount.size(); l++){
+						// assume that the core numbers are in ascending order (else continue)
+						if (Resources[k]->GetCoresCount() < cCount[l]) break; 
+						// Amdal's law
+						float acc = 1.00 / (alpha + (1-alpha)/(l+1));
+						// execTime = amount / (perf * acc)
+						float exTime = amount / (Resources[k]->GetPerf() * acc);
+						execTime.insert(make_pair(make_pair(types[k], cCount[l]), exTime));
+					}
+				}
+												
+				pacs.push_back(new Package(fullPackagesCount,types,cCount,execTime));
+				types.clear();
+				execTime.clear();
+				cCount.clear();
+			}
+			getline(file,s);
+			if (file.eof()) throw errEarlyEnd;
+			++line;
+			for (int j = 0; j < packagesCount; j++){
+				vector <int> row;
+				getline(file,s);
+				if (file.eof()) throw errEarlyEnd;
+				++line;
+				iss.str(s);
+				iss.clear();
+				for (int k = 0; k < packagesCount; k++){
+					int val = 0;
+					iss >> val;
+					if (iss.fail()) {
+						sprintf(second, "%d", line);
+						errWrongFormatFull += second;
+						throw errWrongFormatFull;
+					}
+					if (val!=0  && val!=1){
+						sprintf(second, "%d", i+1);
+						string beginStr = "Workflow ";
+						beginStr += second;
+						beginStr += " - ";
+						beginStr += errConnMatrix;
+						throw beginStr;
+					}
+					row.push_back(val);
+				}
+				connectMatrix.push_back(row);
+			}
+			
+			Workflows.push_back(new Workflow(pacs,connectMatrix,i+1, Resources));
+			pacs.clear();
+			connectMatrix.clear();
+		}
+		for (int i = 0; i < Workflows.size(); i++){
+			Workflows[i]->SetIsPackageInit();
+			Workflows[i]->SetPackagesStates();
+			Workflows[i]->SetFullPackagesStates(0);
+			Workflows[i]->PrintPackagesStates();
+		}
+	}
+	catch (const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
+	
+}
 
 void Model::InitResources(string f){
 	try{
@@ -163,10 +406,13 @@ void Model::InitResources(string f){
 		for (int i = 0; i < Resources.size(); i++) 
 			Resources[i]->CorrectBusyIntervals(stageBorders);
 		SetForcedBricks();
+		int allCoresCount = 0;
 		for (int i = 0; i < Resources.size(); i++) {
 			Resources[i]->SetFreeTimeEnds();
 			Resources[i]->SetChildForcedBricks();
+			allCoresCount += Resources[i]->GetCoresCount();
 		}
+		koeff = 2.00 / allCoresCount;
 		file.close();
 	}
 	catch (const string msg){
@@ -202,257 +448,174 @@ void Model::SetForcedBricks(){
 	}
 }
 
-//void Model::Init(){
-//	// first node
-//	//int coreCount = 4;
-//	int coreCount = 2;
-//	int priority = 1;
-//	multimap <int,pair<int,int>> busyIntervals;
-//	busyIntervals.insert(make_pair(1, make_pair(16401,23653))); 
-//	busyIntervals.insert(make_pair(2, make_pair(23653,24817))); 
-//	busyIntervals.insert(make_pair(1, make_pair(24817,27603)));
-//	busyIntervals.insert(make_pair(1, make_pair(30973,31051)));
-//	//busyIntervals.insert(make_pair(2, make_pair(0,7200))); 
-//	Nodes.push_back(new Node(coreCount, priority, busyIntervals)); busyIntervals.clear();
-//	/*busyIntervals.insert(make_pair(1, make_pair(29024,  32459))); 
-//	busyIntervals.insert(make_pair(1, make_pair(39289,  43200))); */
-//	//Nodes.push_back(new Node(coreCount, priority, busyIntervals));busyIntervals.clear();
-//	/*busyIntervals.insert(make_pair(1, make_pair(23610,26207))); 
-//	Nodes.push_back(new Node(coreCount, priority, busyIntervals));busyIntervals.clear();*/
-//
-//	int arr[15]= {5104, 2055, 6178, 3633, 6068, 10456, 6753, 1097, 1780, 4764, 4984, 3467, 10336, 10722, 1596};
-//	int index = 0;
-//	for (int i = 1; i <=15; i++) {
-//		int uid = i;
-//		vector <int> nodeNumbers;
-//		vector <int> coreCounts;
-//		coreCounts.push_back(1);
-//		map <pair<int,int>, int> execTime;
-//		for (int j = 0; j < 1; j++) {
-//			nodeNumbers.push_back(j+1);
-//			execTime.insert(make_pair(make_pair(j+1,1), arr[index]));
-//		}
-//		index++;
-//		Packages.push_back(new Package(uid, nodeNumbers, coreCounts, execTime));
-//	}
-//	
-//	// workflow 1
-//	vector <int> packageNumbers; 
-//	map <int, vector<int>> links, directLinks;
-//		
-//	for (int i = 0; i <3; i++){
-//		for (int j = 1; j <=5; j++){
-//			packageNumbers.push_back(i*5+j);
-//		}
-//		vector <int> dp;
-//		dp.push_back(4+i*5);dp.push_back(5+i*5);links.insert(make_pair(1+i*5, dp)); dp.clear(); 
-//		dp.push_back(4+i*5); dp.push_back(5+i*5);links.insert(make_pair(2+i*5, dp)); dp.clear(); 
-//		dp.push_back(4+i*5);dp.push_back(5+i*5); links.insert(make_pair(3+i*5, dp)); dp.clear(); 
-//		dp.push_back(5+i*5); links.insert(make_pair(4+i*5, dp)); dp.clear(); 
-//		
-//		vector<int> dLinks;
-//		dLinks.push_back(4+i*5); directLinks.insert(make_pair(1+i*5, dLinks)); dLinks.clear();
-//		dLinks.push_back(4+i*5); directLinks.insert(make_pair(2+i*5, dLinks)); dLinks.clear(); 
-//		dLinks.push_back(4+i*5); directLinks.insert(make_pair(3+i*5, dLinks)); dLinks.clear(); 
-//		dLinks.push_back(5+i*5); directLinks.insert(make_pair(4+i*5, dLinks)); dLinks.clear(); 
-//		
-//		Workflows.push_back(new Workflow(packageNumbers,links,directLinks));
-//		packageNumbers.clear();
-//		links.clear();
-//		directLinks.clear();
-//	}
-//		
-//	directLinks.clear();links.clear(); packageNumbers.clear();
-//	
-//	allCoresCount = 0;
-//	for (int i = 0; i < Nodes.size(); i++){
-//		allCoresCount+=Nodes[i]->GetCoreCount();
-//	}
-//	koeff = 2.00/allCoresCount;
-//	
-//}
 
-void Model::SetFreeCores(int tbegin){
-	for (int i = 0; i < Nodes.size(); i++)
-	{
-		
-		freeCores.push_back((*(Nodes[i])).GetFreeCores(tbegin));
+void Model::SetFullState(){
+	cout << "Generating states and controls..." << endl;
+	ofstream file("fullState.txt");
+	ofstream fileControl("fullControl.txt");
+	ofstream fileNext("fullNext.txt");
+	
+	int num = 0, realNum = 0, workflowsCount = 0, k = 10, allStateCount = 1, ucount = 0;
+	vector<int> coresPerResourceType;
+	workflowsCount = Workflows.size();
+	// number of cores per one resource type
+	for (int i = 0; i < Resources.size(); i++)
+		coresPerResourceType.push_back(Resources[i]->GetCoresCount());
+
+	State oneState;
+	// creating states for each workflow
+	for (int i = 0; i < workflowsCount; i++){
+		string name = "Workflow" + to_string(long long (i+1)) + ".txt";
+		//oneState = GetStates(name, 0, i);
+		// BIG PUSH BACK!!
+		States.push_back(oneState);
+		allStateCount *= oneState.size();
 	}
+	
+	
+	//cout << allStateCount << endl;
+
+	//vector <int> currentCounts;
+	//repeatCounts.push_back(1); currentCounts.push_back(0);
+	//
+	//for (int i = workflowsCount - 2; i >= 0; i--){
+	//	repeatCounts.push_back(repeatCounts.back() * States[i+1].size());
+	//	currentCounts.push_back(0);
+	//}
+	//reverse(repeatCounts.begin(), repeatCounts.end());
+	//vector <vector <int>> stateNumbers;
+	//vector <PackageState> fullState;
+	//
+	//int missing = 0; int prevCount = 0; 
+
+	//while (num < allStateCount){
+	//	//cout << num << endl;
+	//	vector <PackageState>::iterator ip;
+	//	
+	//	for (int i = 0; i < repeatCounts.size(); i++){
+	//		if (num >= repeatCounts[i] && (num % repeatCounts[i]==0)) {
+	//			currentCounts[i]++; 
+	//			if (currentCounts[i] > States[i].size() - 1) {
+	//				currentCounts[i]=0;
+	//				// beginning of repeating cycle
+	//				//beginRepeat[i]=realNum;
+	//			}
+	//		}
+	//	}
+	//	for (int i = 0; i < workflowsCount; i++)
+	//	{
+	//		int stateNum = currentCounts[i];
+	//		for (ip = States[i][stateNum].begin(); ip!=States[i][stateNum].end(); ip++)
+	//			fullState.push_back(*ip);
+	//	}
+	//	
+	//	
+	//	int flag = true;
+	//	for (int i = 0; i < Nodes.size(); i++)
+	//	{
+	//		// max value of cores
+	//		int max = freeCores[i];
+	//		int oneCoreCount = 0;
+	//		vector <PackageState>::iterator it3 = fullState.begin();
+	//		// for all packages states
+	//		for (it3; it3!=fullState.end(); it3++){
+	//			int oneNode = (*it3).get<1>();
+	//			if (oneNode == i+1) oneCoreCount +=(*it3).get<2>();
+	//			if (oneCoreCount > max) {
+	//				flag = false;
+	//				missing++;
+	//				break;
+	//			}
+	//		}
+	//		if (!flag) {
+	//			//if (missing==0) 
+	//			//prevCount = missing;
+	//		break;
+	//		}
+	//	}
+	//	if (flag == true) {
+	//		if (missing>0) {
+	//			if (diff.size()>0) diff.push_back(make_pair(num,diff.back().second+missing));
+	//			else diff.push_back(make_pair(num,missing));
+	//		}
+	//		missing = 0;
+	//		file << realNum << " ";
+	//		for (vector<PackageState>::iterator i = fullState.begin(); i!=fullState.end(); i++)
+	//			file << (*i) << " " ;
+	//		file << endl;
+	//		fileControl << "State " << realNum << endl;
+	//		FullState.push_back(fullState); 
+	//		PossibleControls controls = GetStateControls(realNum, fileControl);
+	//		//cout << controls.size() << endl;
+	//		ucount += controls.size();
+	//		FullControl.push_back(controls);
+	//		/*for (int i = 0; i < workflowsCount; i++){
+	//			int diff = currentCounts[i]-prevCount[i];
+	//			if (diff > 1){
+	//				RepeatChanges[i].insert(make_pair(beginRepeat[i],make_pair(currentCounts[i]-1, repeatCounts[i])));
+	//			}
+	//		}*/
+	//		//prevCount = currentCounts;
+	//		realNum++;
+	//	}
+	//	int percent = (float)num / (float)allStateCount * 100;
+	//	if (percent >= k) { cout << k << " % " << "...\n"; k+=10;}
+	//	
+	//	fullState.clear();
+	//	num ++;
+	//}
+	//
+
+	//cout << 100 << " % " << "...\n";
+	//k = 10;
+	//cout << "All possible states count is: " << FullState.size() << "." << endl;
+	//cout << "All possible controls count is: " << ucount << "." << endl;
+	//ofstream f("error.txt");
+	//for (int i = 0; i < diff.size(); i++)
+	//	f << diff[i].first << " " << diff[i].second << endl;
+	//float max_time = 0; int prevNum = 0;
+	////for (int i = 0; i < FullState.size(); i++){
+	////	vector <PackageState> state = FullState[i];
+	////	//for (int j = 0; j < state.size(); j++) cout << i << " " << state[j] << " ";
+	////	//cout << endl;
+	////	int s = GetStateNumber(state, i);
+	////	//f << s << endl;
+	////	//if (i!=s) {
+	////		cout<< s << " "<< i <<  endl;
+	////	//}
+	////	
+	////	//cout << "Time for getting state number " <<  i << " " << time  << " sec "<< endl;
+	////	//if (time > max_time) {max_time = time;  cout << i << " Max_time = " << max_time << endl;}
+	////}
+
+	//f.close();
+	//cout << "Generating next states for all combinations of states and controls...\n";
+	//int fSize = FullState.size(); 
+	//for (int i = 0; i < FullState.size(); i++){
+	//	fileNext << "State " << i << endl;
+	//	vector <int> v; PossibleControls controls = FullControl[i];
+	//	for (int j = 0 ; j < controls.size(); j++){
+	//		//cout << "Control " << j+1	<< " of " << controls.size()-1 << endl;
+	//		//double start = clock();
+	//		v.push_back(GetNextStateNumber(i, j, fileNext));
+	//		//float time = (clock() - start) / CLOCKS_PER_SEC;
+	//		//cout << "Time of executing " <<  time  << " sec "<< endl;
+	//		//if (time > max_time) {max_time = time;  cout << "Max_time = " << max_time << endl;}
+	//	}
+	//	FullNextState.insert(make_pair(i, v));
+	//	int percent = (float)i / (float)fSize * 100;
+	//	if (percent >= k) { cout << k << " % " << "...\n"; k+=10;}
+	//	
+	//}
+	//cout << 100 << " % " << "...\n";
+	file.close();
+	fileNext.close();
+	fileControl.close();
 }
 
-
-//void Model::SetFullState(){
-//	// and another foolish comment
-//	cout << "Generating states and controls..." << endl;
-//	ofstream file("fullState.txt");
-//	ofstream fileControl("fullControl.txt");
-//	ofstream fileNext("fullNext.txt");
-//	
-//	int num = 0, realNum = 0, workflowsCount = 0, k = 10, allStateCount = 1, ucount = 0;
-//
-//	workflowsCount = Workflows.size();
-//	for (int i = 0; i < Nodes.size(); i++)
-//		freeCores.push_back(Nodes[i]->GetCoreCount());
-//
-//	State oneState;
-//	// creating states for each workflow
-//	for (int i = 0; i < workflowsCount; i++){
-//		int numberFirst = 0;
-//		char buf[10];
-//		char name[100];
-//		strcpy(name,"Workflow");
-//		strcat(name,itoa(i+1,buf,10));
-//		strcat(name,".txt");
-//		vector <int> packageNumbers = Workflows[i]->GetPackageNumbers();
-//		oneState = GetStates(name, packageNumbers, freeCores, packageNumbers.size());
-//		States.push_back(oneState);
-//		
-//		allStateCount *= oneState.size();
-//	}
-//	
-//	
-//	cout << allStateCount << endl;
-//
-//	vector <int> currentCounts;
-//	repeatCounts.push_back(1); currentCounts.push_back(0);
-//	
-//	for (int i = workflowsCount - 2; i >= 0; i--){
-//		repeatCounts.push_back(repeatCounts.back() * States[i+1].size());
-//		currentCounts.push_back(0);
-//	}
-//	reverse(repeatCounts.begin(), repeatCounts.end());
-//	vector <vector <int>> stateNumbers;
-//	vector <PackageState> fullState;
-//	
-//	int missing = 0; int prevCount = 0; 
-//
-//	while (num < allStateCount){
-//		//cout << num << endl;
-//		vector <PackageState>::iterator ip;
-//		
-//		for (int i = 0; i < repeatCounts.size(); i++){
-//			if (num >= repeatCounts[i] && (num % repeatCounts[i]==0)) {
-//				currentCounts[i]++; 
-//				if (currentCounts[i] > States[i].size() - 1) {
-//					currentCounts[i]=0;
-//					// beginning of repeating cycle
-//					//beginRepeat[i]=realNum;
-//				}
-//			}
-//		}
-//		for (int i = 0; i < workflowsCount; i++)
-//		{
-//			int stateNum = currentCounts[i];
-//			for (ip = States[i][stateNum].begin(); ip!=States[i][stateNum].end(); ip++)
-//				fullState.push_back(*ip);
-//		}
-//		
-//		
-//		int flag = true;
-//		for (int i = 0; i < Nodes.size(); i++)
-//		{
-//			// max value of cores
-//			int max = freeCores[i];
-//			int oneCoreCount = 0;
-//			vector <PackageState>::iterator it3 = fullState.begin();
-//			// for all packages states
-//			for (it3; it3!=fullState.end(); it3++){
-//				int oneNode = (*it3).get<1>();
-//				if (oneNode == i+1) oneCoreCount +=(*it3).get<2>();
-//				if (oneCoreCount > max) {
-//					flag = false;
-//					missing++;
-//					break;
-//				}
-//			}
-//			if (!flag) {
-//				//if (missing==0) 
-//				//prevCount = missing;
-//			break;
-//			}
-//		}
-//		if (flag == true) {
-//			if (missing>0) {
-//				if (diff.size()>0) diff.push_back(make_pair(num,diff.back().second+missing));
-//				else diff.push_back(make_pair(num,missing));
-//			}
-//			missing = 0;
-//			file << realNum << " ";
-//			for (vector<PackageState>::iterator i = fullState.begin(); i!=fullState.end(); i++)
-//				file << (*i) << " " ;
-//			file << endl;
-//			fileControl << "State " << realNum << endl;
-//			FullState.push_back(fullState); 
-//			PossibleControls controls = GetStateControls(realNum, fileControl);
-//			//cout << controls.size() << endl;
-//			ucount += controls.size();
-//			FullControl.push_back(controls);
-//			/*for (int i = 0; i < workflowsCount; i++){
-//				int diff = currentCounts[i]-prevCount[i];
-//				if (diff > 1){
-//					RepeatChanges[i].insert(make_pair(beginRepeat[i],make_pair(currentCounts[i]-1, repeatCounts[i])));
-//				}
-//			}*/
-//			//prevCount = currentCounts;
-//			realNum++;
-//		}
-//		int percent = (float)num / (float)allStateCount * 100;
-//		if (percent >= k) { cout << k << " % " << "...\n"; k+=10;}
-//		
-//		fullState.clear();
-//		num ++;
-//	}
-//	
-//
-//	cout << 100 << " % " << "...\n";
-//	k = 10;
-//	cout << "All possible states count is: " << FullState.size() << "." << endl;
-//	cout << "All possible controls count is: " << ucount << "." << endl;
-//	ofstream f("error.txt");
-//	for (int i = 0; i < diff.size(); i++)
-//		f << diff[i].first << " " << diff[i].second << endl;
-//	float max_time = 0; int prevNum = 0;
-//	//for (int i = 0; i < FullState.size(); i++){
-//	//	vector <PackageState> state = FullState[i];
-//	//	//for (int j = 0; j < state.size(); j++) cout << i << " " << state[j] << " ";
-//	//	//cout << endl;
-//	//	int s = GetStateNumber(state, i);
-//	//	//f << s << endl;
-//	//	//if (i!=s) {
-//	//		cout<< s << " "<< i <<  endl;
-//	//	//}
-//	//	
-//	//	//cout << "Time for getting state number " <<  i << " " << time  << " sec "<< endl;
-//	//	//if (time > max_time) {max_time = time;  cout << i << " Max_time = " << max_time << endl;}
-//	//}
-//
-//	f.close();
-//	cout << "Generating next states for all combinations of states and controls...\n";
-//	int fSize = FullState.size(); 
-//	for (int i = 0; i < FullState.size(); i++){
-//		fileNext << "State " << i << endl;
-//		vector <int> v; PossibleControls controls = FullControl[i];
-//		for (int j = 0 ; j < controls.size(); j++){
-//			//cout << "Control " << j+1	<< " of " << controls.size()-1 << endl;
-//			//double start = clock();
-//			v.push_back(GetNextStateNumber(i, j, fileNext));
-//			//float time = (clock() - start) / CLOCKS_PER_SEC;
-//			//cout << "Time of executing " <<  time  << " sec "<< endl;
-//			//if (time > max_time) {max_time = time;  cout << "Max_time = " << max_time << endl;}
-//		}
-//		FullNextState.insert(make_pair(i, v));
-//		int percent = (float)i / (float)fSize * 100;
-//		if (percent >= k) { cout << k << " % " << "...\n"; k+=10;}
-//		
-//	}
-//	cout << 100 << " % " << "...\n";
-//	file.close();
-//	fileNext.close();
-//	fileControl.close();
-//}
-
-//State Model::GetStates(const char *filename, vector <int> packages, vector <int> freeCores, int workflowSize){
-//	State result; State oneResult,  otherResults;
+// initPackage and wfNum - from zero
+//State Model::GetStates(string filename, int initPackage, int wfNum){
+//	State result, oneResult,  otherResults;
 //	ofstream file(filename);
 //	vector <PackageState> oneState, fullState;
 //	int package, node, core; float level;
@@ -636,42 +799,42 @@ void Model::SetFreeCores(int tbegin){
 //	return result;
 //}
 
-void Model::CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls){
-	vector <int> impossibleStateNumbers;
-	// eliminating impossible combinations
-	int number = 0;
-	for (vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin(); it1!= fullPossibleControls.end(); it1++){
-		
-			int isCoresNumberCorrect = true; 
-			vector <int> busyCores;
-			for (int i = 0; i < Nodes.size(); i++) busyCores.push_back(0);
-		 for (vector <OnePackageControl>::iterator it2 = (*it1).begin(); it2!= (*it1).end(); it2++){
-			 int node = (*it2).get<1>();
-			 int cores = (*it2).get<2>();
-			 if (node != 0) busyCores[node-1] += cores; 
-		 }
-		// file << "busy cores " << busyCores[0] << " " <<busyCores[1] << endl;
-		 for (int i = 0; i < Nodes.size(); i++)
-			 if (freeCores[i] < busyCores[i]) isCoresNumberCorrect = false;
-		 if (!isCoresNumberCorrect) {
-			impossibleStateNumbers.push_back(number);
-		 }
-		 number ++;
-	}
-
-	//cout << "Impossible states size :" << impossibleStateNumbers.size() << endl;
-
-	for (int i = 0; i < impossibleStateNumbers.size(); i++)
-	{
-		vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin();
-		int j = impossibleStateNumbers[i];
-		for (int k = i + 1; k < impossibleStateNumbers.size(); k++) --impossibleStateNumbers[k];
-		fullPossibleControls.erase(it1 + j);
-		//cout << impossibleStateNumbers[i] << " ";
-		//fullPossibleControls.erase(fullPossibleControls.begin() + 107);
-		
-	}
-}
+//void Model::CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls){
+//	vector <int> impossibleStateNumbers;
+//	// eliminating impossible combinations
+//	int number = 0;
+//	for (vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin(); it1!= fullPossibleControls.end(); it1++){
+//		
+//			int isCoresNumberCorrect = true; 
+//			vector <int> busyCores;
+//			for (int i = 0; i < Nodes.size(); i++) busyCores.push_back(0);
+//		 for (vector <OnePackageControl>::iterator it2 = (*it1).begin(); it2!= (*it1).end(); it2++){
+//			 int node = (*it2).get<1>();
+//			 int cores = (*it2).get<2>();
+//			 if (node != 0) busyCores[node-1] += cores; 
+//		 }
+//		// file << "busy cores " << busyCores[0] << " " <<busyCores[1] << endl;
+//		 for (int i = 0; i < Nodes.size(); i++)
+//			 if (freeCores[i] < busyCores[i]) isCoresNumberCorrect = false;
+//		 if (!isCoresNumberCorrect) {
+//			impossibleStateNumbers.push_back(number);
+//		 }
+//		 number ++;
+//	}
+//
+//	//cout << "Impossible states size :" << impossibleStateNumbers.size() << endl;
+//
+//	for (int i = 0; i < impossibleStateNumbers.size(); i++)
+//	{
+//		vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin();
+//		int j = impossibleStateNumbers[i];
+//		for (int k = i + 1; k < impossibleStateNumbers.size(); k++) --impossibleStateNumbers[k];
+//		fullPossibleControls.erase(it1 + j);
+//		//cout << impossibleStateNumbers[i] << " ";
+//		//fullPossibleControls.erase(fullPossibleControls.begin() + 107);
+//		
+//	}
+//}
 
 //PossibleControls Model::GetStateControls(int stateNumber, ofstream& file){
 //	vector <PackageState> &state = FullState[stateNumber];
@@ -931,317 +1094,317 @@ void Model::CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPo
 //}
 
 
-void Model::GetStageInformation(int stage){
-	StageInformation result;
-	StageTable.clear();
-	int tbegin = stage * delta;
-	freeCores.clear();
-	SetFreeCores(tbegin);
+//void Model::GetStageInformation(int stage){
+//	StageInformation result;
+//	StageTable.clear();
+//	int tbegin = stage * delta;
+//	freeCores.clear();
+//	SetFreeCores(tbegin);
+//
+//	char buf[10];
+//	char * a = (char *)malloc(100*sizeof(char));
+//	a = itoa(stage,buf,10);
+//	char * c = ".txt";
+//	char * name1 = strcat(a,c);
+//	ofstream file(name1);
+//	int num = 0; // number of correct states for this stage
+//	// for all states
+//	for (int i = 0; i < FullState.size(); i++){
+//		pControlNumbers.clear();
+//		vector <int> uopts;
+//		float efficiency; 
+//		// if we have right core number for this state
+//		if (CheckState(i)) {
+//			//double start = clock();
+//			num ++;
+//			PossibleControls pControls = CheckControls(i, tbegin);
+//			// if it is the last period
+//			if (tbegin == T - delta) uopts = GetUOptsByStateNumber(i, tbegin, file, efficiency); 
+//			else{
+//				 file << "State " << i << endl;
+//				vector <OneControl>::iterator it = pControls.begin();
+//				int nControl = 0; float maxEff = 0; int maxControl = 0,  numMax = 0;
+//				// for each possible control
+//				StageInformation &s = FullInfo.back();
+//				for (;it!=pControls.end(); it++){
+//					file << pControlNumbers[nControl] << " ";
+//					float eff = GetEfficiency(*it, tbegin,i);
+//					file << eff << endl;
+//					//int nextStateNumber = GetNextStateNumber(i, nControl, file);
+//					int nextStateNumber = FullNextState[i][pControlNumbers[nControl]];
+//					float nextEff = 0.0; 
+//					nextEff = s[nextStateNumber].get<2>();
+//
+//					/*for (int i = 0; i < s.size(); i++){
+//						if (s[i].get<0>()==nextStateNumber)
+//						{
+//							nextEff = s[i].get<2>();
+//							i = s.size();
+//						}
+//					}*/
+//					if (eff+nextEff == maxEff) uopts.push_back(pControlNumbers[nControl]);
+//					//cout << "Next eff = " << nextEff<< endl;
+//					//cout << "Eff = " << eff<< endl;
+//					if (eff + nextEff > maxEff){
+//						uopts.clear();
+//						maxEff = eff + nextEff;
+//						uopts.push_back(pControlNumbers[nControl]);
+//						efficiency = maxEff;
+//					}
+//					nControl ++;
+//				}
+//			}
+//			StageTable.push_back(make_tuple(i,uopts,efficiency));
+//			//cout << "Time of executing for one state" <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
+//			
+//		}
+//		else StageTable.push_back(make_tuple(i,uopts,0.0));
+//		
+//	}
+//	FullInfo.push_back(StageTable);
+//	//cout << "before: " << fCount << endl;
+//	//cout << "after: " << pCount << endl;
+//	cout << "Stage " << stage << " has " << num << " states." << endl;
+//	file.close();
+//
+//}
 
-	char buf[10];
-	char * a = (char *)malloc(100*sizeof(char));
-	a = itoa(stage,buf,10);
-	char * c = ".txt";
-	char * name1 = strcat(a,c);
-	ofstream file(name1);
-	int num = 0; // number of correct states for this stage
-	// for all states
-	for (int i = 0; i < FullState.size(); i++){
-		pControlNumbers.clear();
-		vector <int> uopts;
-		float efficiency; 
-		// if we have right core number for this state
-		if (CheckState(i)) {
-			//double start = clock();
-			num ++;
-			PossibleControls pControls = CheckControls(i, tbegin);
-			// if it is the last period
-			if (tbegin == T - delta) uopts = GetUOptsByStateNumber(i, tbegin, file, efficiency); 
-			else{
-				 file << "State " << i << endl;
-				vector <OneControl>::iterator it = pControls.begin();
-				int nControl = 0; float maxEff = 0; int maxControl = 0,  numMax = 0;
-				// for each possible control
-				StageInformation &s = FullInfo.back();
-				for (;it!=pControls.end(); it++){
-					file << pControlNumbers[nControl] << " ";
-					float eff = GetEfficiency(*it, tbegin,i);
-					file << eff << endl;
-					//int nextStateNumber = GetNextStateNumber(i, nControl, file);
-					int nextStateNumber = FullNextState[i][pControlNumbers[nControl]];
-					float nextEff = 0.0; 
-					nextEff = s[nextStateNumber].get<2>();
-
-					/*for (int i = 0; i < s.size(); i++){
-						if (s[i].get<0>()==nextStateNumber)
-						{
-							nextEff = s[i].get<2>();
-							i = s.size();
-						}
-					}*/
-					if (eff+nextEff == maxEff) uopts.push_back(pControlNumbers[nControl]);
-					//cout << "Next eff = " << nextEff<< endl;
-					//cout << "Eff = " << eff<< endl;
-					if (eff + nextEff > maxEff){
-						uopts.clear();
-						maxEff = eff + nextEff;
-						uopts.push_back(pControlNumbers[nControl]);
-						efficiency = maxEff;
-					}
-					nControl ++;
-				}
-			}
-			StageTable.push_back(make_tuple(i,uopts,efficiency));
-			//cout << "Time of executing for one state" <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
-			
-		}
-		else StageTable.push_back(make_tuple(i,uopts,0.0));
-		
-	}
-	FullInfo.push_back(StageTable);
-	//cout << "before: " << fCount << endl;
-	//cout << "after: " << pCount << endl;
-	cout << "Stage " << stage << " has " << num << " states." << endl;
-	file.close();
-
-}
-
-PossibleControls Model::CheckControls(int stateNum, int tbegin){
-	PossibleControls pC = FullControl[stateNum];
-	vector <PackageState> s = FullState[stateNum];
-	// get free time ends for each node and each number of cores
-	map <int, vector <pair <int,int>>> freeTimeEnd, current; // (nodeNum, <(freeCoreNum1, endTime1), (freeCoreNum2, endTime2)...>)
-	
-	for (int i = 0; i < Nodes.size(); i++){
-		vector <pair <int,int>> freeTimesForNode;
-		int fullCoreCount = Nodes[i]->GetCoreCount();
-		for (int j = 0; j < fullCoreCount; j++)
-		{
-			freeTimesForNode.push_back(make_pair(j+1, Nodes[i]->GetFreeEnd(j+1,tbegin)));
-		}
-		freeTimeEnd.insert(make_pair(i+1,freeTimesForNode));
-	}
-
-	
-
-	PossibleControls result;
-	PossibleControls::iterator it = pC.begin();
-	int num = 0;
-	// for each controls
-	for (; it!= pC.end(); it++ ){
-		int flag = true;
-		vector <int> busyCores;
-		for (int i = 0; i < freeCores.size(); i++)
-			busyCores.push_back(0);
-		current.clear();
-		current = freeTimeEnd;
-		for (vector <OnePackageControl>::iterator ip = (*it).begin(); ip!= (*it).end(); ip++){
-			float level ;
-			int core = (*ip).get<2>();
-			int node = (*ip).get<1>();
-			if (node !=0) busyCores[node-1]+= core;
-			int package = (*ip).get<0>();
-
-			vector <PackageState>::iterator ps  = s.begin();
-			for (;ps!=s.end(); ps++)
-				if ((*ps).get<0>() == package) level = (*ps).get<3>();
-			if (level > 0 && node!=0) {
-				int fullCoreCount = Nodes[node-1]->GetCoreCount();
-				map<int,vector <pair <int,int>>>::iterator free = current.find(node);
-				int minusCount = 0;
-			
-				for (int j = fullCoreCount-1; j >=0; j--){
-					if (minusCount==core) break;
-					if (free->second[j].second!=0)
-					{
-						free->second[j].second=0;
-						++minusCount;
-							
-					}
-				}
-			}
-		}
-		// for each package in control
-		for (vector <OnePackageControl>::iterator ip = (*it).begin(); ip!= (*it).end(); ip++){
-			// check if we haven't enough cores;
-			
-			float level ;
-			int core = (*ip).get<2>();
-			int node = (*ip).get<1>();
-			if (node !=0) busyCores[node-1]+= core;
-			int package = (*ip).get<0>();
-			
-			vector <PackageState>::iterator ps  = s.begin();
-			for (;ps!=s.end(); ps++)
-				if ((*ps).get<0>() == package) level = (*ps).get<3>();
-
-			// if we prepare to begin execution 
-			if (level == 0 && node !=0){ //uncomment if will crash
-			
-				int execTime = Packages[package-1]->GetExecTime(node,core);
-				int tRealBegin = GetTRealBegin(execTime,level,tbegin);
-				map<int,vector <pair <int,int>>>::iterator free = current.find(node);
-				vector <pair <int,int>> freePair= free->second;
-				for (int i = 0; i < freePair.size(); i++){
-					if (core == freePair[i].first){
-						// if we don't have enough time
-						if (tRealBegin+execTime > freePair[i].second)
-						{ flag = false; break;}
-						// if we have enough time
-						else {
-							int fullCoreCount = Nodes[node-1]->GetCoreCount();
-							for (int j = fullCoreCount - core; j>=1; j-- ){
-								if (freePair[j-1].second > tRealBegin + execTime)
-									for (int k = j; k < fullCoreCount; k++){
-										//current[node-1][k-1].second = current[node-1][k].second;
-										free = current.find(node);
-										free->second[k-1].second = free->second[k].second;
-									}
-							}
-							for (int j = fullCoreCount - core + 1; j <= fullCoreCount; j++ ){
-								free = current.find(node);
-								free->second[j-1].second = 0;
-							}
-						}
-					}
-				}
-				
-			} // if
-		}//for
-		// uncomment if program will crash
-		/*for (int i = 0; i < freeCores.size(); i++){
-			if (busyCores[i]>freeCores[i]) flag = false;
-		}
-*/
-		if (flag) {
-			result.push_back(*it); 
-				//cout << num;
-			pControlNumbers.push_back(num);
-		}
-		num ++;
-	}// for
-	return result;
-}
-
-
-bool Model::CheckState (int stateNumber){
-	vector <int> busyCores;
-	for (int i = 0; i < freeCores.size(); i++) busyCores.push_back(0);
-	vector<PackageState>::iterator it = FullState[stateNumber].begin();
-	for (; it != FullState[stateNumber].end(); it++){
-		int nodeNum = (*it).get<1>();
-		if (nodeNum!=0) busyCores[nodeNum-1]+=(*it).get<2>();
-	}
-	for (int i = 0; i < freeCores.size(); i++)
-		if (freeCores[i] < busyCores[i]) return false;
-	return true;
-}
+//PossibleControls Model::CheckControls(int stateNum, int tbegin){
+//	PossibleControls pC = FullControl[stateNum];
+//	vector <PackageState> s = FullState[stateNum];
+//	// get free time ends for each node and each number of cores
+//	map <int, vector <pair <int,int>>> freeTimeEnd, current; // (nodeNum, <(freeCoreNum1, endTime1), (freeCoreNum2, endTime2)...>)
+//	
+//	for (int i = 0; i < Nodes.size(); i++){
+//		vector <pair <int,int>> freeTimesForNode;
+//		int fullCoreCount = Nodes[i]->GetCoreCount();
+//		for (int j = 0; j < fullCoreCount; j++)
+//		{
+//			freeTimesForNode.push_back(make_pair(j+1, Nodes[i]->GetFreeEnd(j+1,tbegin)));
+//		}
+//		freeTimeEnd.insert(make_pair(i+1,freeTimesForNode));
+//	}
+//
+//	
+//
+//	PossibleControls result;
+//	PossibleControls::iterator it = pC.begin();
+//	int num = 0;
+//	// for each controls
+//	for (; it!= pC.end(); it++ ){
+//		int flag = true;
+//		vector <int> busyCores;
+//		for (int i = 0; i < freeCores.size(); i++)
+//			busyCores.push_back(0);
+//		current.clear();
+//		current = freeTimeEnd;
+//		for (vector <OnePackageControl>::iterator ip = (*it).begin(); ip!= (*it).end(); ip++){
+//			float level ;
+//			int core = (*ip).get<2>();
+//			int node = (*ip).get<1>();
+//			if (node !=0) busyCores[node-1]+= core;
+//			int package = (*ip).get<0>();
+//
+//			vector <PackageState>::iterator ps  = s.begin();
+//			for (;ps!=s.end(); ps++)
+//				if ((*ps).get<0>() == package) level = (*ps).get<3>();
+//			if (level > 0 && node!=0) {
+//				int fullCoreCount = Nodes[node-1]->GetCoreCount();
+//				map<int,vector <pair <int,int>>>::iterator free = current.find(node);
+//				int minusCount = 0;
+//			
+//				for (int j = fullCoreCount-1; j >=0; j--){
+//					if (minusCount==core) break;
+//					if (free->second[j].second!=0)
+//					{
+//						free->second[j].second=0;
+//						++minusCount;
+//							
+//					}
+//				}
+//			}
+//		}
+//		// for each package in control
+//		for (vector <OnePackageControl>::iterator ip = (*it).begin(); ip!= (*it).end(); ip++){
+//			// check if we haven't enough cores;
+//			
+//			float level ;
+//			int core = (*ip).get<2>();
+//			int node = (*ip).get<1>();
+//			if (node !=0) busyCores[node-1]+= core;
+//			int package = (*ip).get<0>();
+//			
+//			vector <PackageState>::iterator ps  = s.begin();
+//			for (;ps!=s.end(); ps++)
+//				if ((*ps).get<0>() == package) level = (*ps).get<3>();
+//
+//			// if we prepare to begin execution 
+//			if (level == 0 && node !=0){ //uncomment if will crash
+//			
+//				int execTime = Packages[package-1]->GetExecTime(node,core);
+//				int tRealBegin = GetTRealBegin(execTime,level,tbegin);
+//				map<int,vector <pair <int,int>>>::iterator free = current.find(node);
+//				vector <pair <int,int>> freePair= free->second;
+//				for (int i = 0; i < freePair.size(); i++){
+//					if (core == freePair[i].first){
+//						// if we don't have enough time
+//						if (tRealBegin+execTime > freePair[i].second)
+//						{ flag = false; break;}
+//						// if we have enough time
+//						else {
+//							int fullCoreCount = Nodes[node-1]->GetCoreCount();
+//							for (int j = fullCoreCount - core; j>=1; j-- ){
+//								if (freePair[j-1].second > tRealBegin + execTime)
+//									for (int k = j; k < fullCoreCount; k++){
+//										//current[node-1][k-1].second = current[node-1][k].second;
+//										free = current.find(node);
+//										free->second[k-1].second = free->second[k].second;
+//									}
+//							}
+//							for (int j = fullCoreCount - core + 1; j <= fullCoreCount; j++ ){
+//								free = current.find(node);
+//								free->second[j-1].second = 0;
+//							}
+//						}
+//					}
+//				}
+//				
+//			} // if
+//		}//for
+//		// uncomment if program will crash
+//		/*for (int i = 0; i < freeCores.size(); i++){
+//			if (busyCores[i]>freeCores[i]) flag = false;
+//		}
+//*/
+//		if (flag) {
+//			result.push_back(*it); 
+//				//cout << num;
+//			pControlNumbers.push_back(num);
+//		}
+//		num ++;
+//	}// for
+//	return result;
+//}
 
 
-
-float Model::GetEfficiency(OneControl &it2, int tbegin, int stateNum){
-	float e = 0;
-	// for each package in control
-	for (int i = 0; i < it2.size(); i++){
-		int nodeNum = it2[i].get<1>();
-		if (nodeNum!=0)
-		{
-			int packageNum = it2[i].get<0>();
-			float level = FullState[stateNum][packageNum-1].get<3>();
-			int coreNum = it2[i].get<2>();
-			int l = Packages[packageNum-1]->GetExecTime(nodeNum, coreNum);
-			int tend;
-			if (level == 0){
-				tend = tbegin + l;
-			}
-			else {
-				int tRealBegin = GetTRealBegin(l,level,tbegin);
-				tend = tRealBegin + l;
-			}
-			if (tend >= tbegin + delta) e+=EfficiencyByPeriod(coreNum, tbegin, tbegin + delta);
-			else e+=EfficiencyByPeriod(coreNum, tbegin, tend);
-			if (tend < tbegin){
-				cout << tbegin << endl;
-				cout << tend << endl;
-				cout << l << endl;
-				cout << level << endl;
-				cout << stateNum << endl;
-				for (int i = 0; i < it2.size(); i++) cout << it2[i] << " ";
-				cout << endl;
-			}
-		}
-	}
-	return e;
-}
-
-vector <int> Model::GetUOptsByStateNumber(int stateNum, int tbegin, ofstream &file, float &efficiency){
-	
-		file << "State " << stateNum << endl;
-		vector <int> result;
-		
-		// taking control variants for this state
-		vector <pair<int,float>> eff; // (number of control, efficiency value)
-		vector <OneControl> controlVector = FullControl[stateNum];
-		// нужно делать проверку
-
-		vector <OneControl>::iterator it2 = controlVector.begin();
-		int nControl = 0;
-		for (; it2!= controlVector.end(); it2++){
-			// if control is avaliable???
-			vector<int>::iterator v = find(pControlNumbers.begin(), pControlNumbers.end(), distance(controlVector.begin(), it2)) ; 
-			if ( v != pControlNumbers.end() )
-			{
-				
-				float e = GetEfficiency(*it2, tbegin, stateNum);
-				//int busyCores = GetBusyCores(*it2);
-				//file << busyCores << endl;
-				 eff.push_back(make_pair(nControl,e));
-				//file << eff.back();
-				//file << endl;
-			}	
-			nControl ++;
-		} 	
-			sort(eff.begin(), eff.end(), SortPairs);
-		
-			float maxVal = eff[0].second;
-			efficiency = maxVal;
-			int i = 0;
-			for (int i = 0; i < eff.size(); i++){
-				if (eff[i].second == maxVal) 
-					result.push_back(eff[i].first);
-				file << eff[i].first << " " << eff[i].second << endl;
-			}
-				
-		// if
-		
-	
-
-		/*while (eff[i].second == maxVal) {
-			result.push_back(eff[i].first);
-			file << eff[i].first << " " << eff[i].second << endl;
-			i++;
-			if (i == eff.size()-1) break;
-		}*/
-		//file.close();
-		return result;
-}
-
-int Model::GetTRealBegin(int l, float level, int periodBegin){
-	float tbegin = periodBegin - l*level;
-	for (int t = 0; t <=T; t+=delta){
-		if (tbegin >= t && tbegin < t+delta )
-			return t;
-	}
-}
-
-int Model::GetBusyCores(OneControl &control){
-	int cores = 0;
-	vector <OnePackageControl>::iterator it = control.begin();
-	for (;it!= control.end(); it++){
-		cores +=(*it).get<2>();
-	}
-	return cores;
-}
+//bool Model::CheckState (int stateNumber){
+//	vector <int> busyCores;
+//	for (int i = 0; i < freeCores.size(); i++) busyCores.push_back(0);
+//	vector<PackageState>::iterator it = FullState[stateNumber].begin();
+//	for (; it != FullState[stateNumber].end(); it++){
+//		int nodeNum = (*it).get<1>();
+//		if (nodeNum!=0) busyCores[nodeNum-1]+=(*it).get<2>();
+//	}
+//	for (int i = 0; i < freeCores.size(); i++)
+//		if (freeCores[i] < busyCores[i]) return false;
+//	return true;
+//}
+//
+//
+//
+//float Model::GetEfficiency(OneControl &it2, int tbegin, int stateNum){
+//	float e = 0;
+//	// for each package in control
+//	for (int i = 0; i < it2.size(); i++){
+//		int nodeNum = it2[i].get<1>();
+//		if (nodeNum!=0)
+//		{
+//			int packageNum = it2[i].get<0>();
+//			float level = FullState[stateNum][packageNum-1].get<3>();
+//			int coreNum = it2[i].get<2>();
+//			int l = Packages[packageNum-1]->GetExecTime(nodeNum, coreNum);
+//			int tend;
+//			if (level == 0){
+//				tend = tbegin + l;
+//			}
+//			else {
+//				int tRealBegin = GetTRealBegin(l,level,tbegin);
+//				tend = tRealBegin + l;
+//			}
+//			if (tend >= tbegin + delta) e+=EfficiencyByPeriod(coreNum, tbegin, tbegin + delta);
+//			else e+=EfficiencyByPeriod(coreNum, tbegin, tend);
+//			if (tend < tbegin){
+//				cout << tbegin << endl;
+//				cout << tend << endl;
+//				cout << l << endl;
+//				cout << level << endl;
+//				cout << stateNum << endl;
+//				for (int i = 0; i < it2.size(); i++) cout << it2[i] << " ";
+//				cout << endl;
+//			}
+//		}
+//	}
+//	return e;
+//}
+//
+//vector <int> Model::GetUOptsByStateNumber(int stateNum, int tbegin, ofstream &file, float &efficiency){
+//	
+//		file << "State " << stateNum << endl;
+//		vector <int> result;
+//		
+//		// taking control variants for this state
+//		vector <pair<int,float>> eff; // (number of control, efficiency value)
+//		vector <OneControl> controlVector = FullControl[stateNum];
+//		// нужно делать проверку
+//
+//		vector <OneControl>::iterator it2 = controlVector.begin();
+//		int nControl = 0;
+//		for (; it2!= controlVector.end(); it2++){
+//			// if control is avaliable???
+//			vector<int>::iterator v = find(pControlNumbers.begin(), pControlNumbers.end(), distance(controlVector.begin(), it2)) ; 
+//			if ( v != pControlNumbers.end() )
+//			{
+//				
+//				float e = GetEfficiency(*it2, tbegin, stateNum);
+//				//int busyCores = GetBusyCores(*it2);
+//				//file << busyCores << endl;
+//				 eff.push_back(make_pair(nControl,e));
+//				//file << eff.back();
+//				//file << endl;
+//			}	
+//			nControl ++;
+//		} 	
+//			sort(eff.begin(), eff.end(), SortPairs);
+//		
+//			float maxVal = eff[0].second;
+//			efficiency = maxVal;
+//			int i = 0;
+//			for (int i = 0; i < eff.size(); i++){
+//				if (eff[i].second == maxVal) 
+//					result.push_back(eff[i].first);
+//				file << eff[i].first << " " << eff[i].second << endl;
+//			}
+//				
+//		// if
+//		
+//	
+//
+//		/*while (eff[i].second == maxVal) {
+//			result.push_back(eff[i].first);
+//			file << eff[i].first << " " << eff[i].second << endl;
+//			i++;
+//			if (i == eff.size()-1) break;
+//		}*/
+//		//file.close();
+//		return result;
+//}
+//
+//int Model::GetTRealBegin(int l, float level, int periodBegin){
+//	float tbegin = periodBegin - l*level;
+//	for (int t = 0; t <=T; t+=delta){
+//		if (tbegin >= t && tbegin < t+delta )
+//			return t;
+//	}
+//}
+//
+//int Model::GetBusyCores(OneControl &control){
+//	int cores = 0;
+//	vector <OnePackageControl>::iterator it = control.begin();
+//	for (;it!= control.end(); it++){
+//		cores +=(*it).get<2>();
+//	}
+//	return cores;
+//}
 
 
 
@@ -1424,59 +1587,59 @@ int Model::GetBusyCores(OneControl &control){
 
 
 
-float Model::Greedy(int currentUopt, float currentEff){
-	ofstream f("zhadny.txt");float maxEff = 0.0;
-	
-	int stateNum = 0;
-	int nextState = 0;
-	int tbegin = 0;
-	for (int i = T/delta-1; i >=0 ; i--){
-		int uopt = 0;
-		StageInformation &si = FullInfo[i];
-		if (i == T/delta-1){
-			uopt = currentUopt;
-			maxEff+=currentEff;
-			nextState = FullNextState[stateNum][uopt];
-			
-			
-		}
-		else{
-			pControlNumbers.clear();
-			float uopteff = 0.0;
-			PossibleControls pc = CheckControls(nextState, tbegin);
-			for (int j = 0; j <pc.size(); j++){
-				
-				float eff = GetEfficiency(pc[j], tbegin,nextState);
-				if (eff > uopteff){
-					uopt = pControlNumbers[j];
-					uopteff = eff;
-				}
-			}
-			
-			maxEff += uopteff;
-			stateNum = nextState;
-			nextState = FullNextState[nextState][uopt];
-			
-		}
-
-		vector <PackageState> p = FullState[stateNum];
-		for (int j = 0; j < Packages.size();j++){
-			cout << p[j] << " ";
-		}
-		cout << endl;
-		OneControl c = FullControl[stateNum][uopt];
-			for (int j = 0; j < Packages.size();j++){
-			cout << c[j] << " ";
-		}
-		cout << endl;
-		cout << "Next state num: " << nextState << endl;
-		tbegin +=delta;
-	}
-	
-	return maxEff;
-}
-
-
+//float Model::Greedy(int currentUopt, float currentEff){
+//	ofstream f("zhadny.txt");float maxEff = 0.0;
+//	
+//	int stateNum = 0;
+//	int nextState = 0;
+//	int tbegin = 0;
+//	for (int i = T/delta-1; i >=0 ; i--){
+//		int uopt = 0;
+//		StageInformation &si = FullInfo[i];
+//		if (i == T/delta-1){
+//			uopt = currentUopt;
+//			maxEff+=currentEff;
+//			nextState = FullNextState[stateNum][uopt];
+//			
+//			
+//		}
+//		else{
+//			pControlNumbers.clear();
+//			float uopteff = 0.0;
+//			PossibleControls pc = CheckControls(nextState, tbegin);
+//			for (int j = 0; j <pc.size(); j++){
+//				
+//				float eff = GetEfficiency(pc[j], tbegin,nextState);
+//				if (eff > uopteff){
+//					uopt = pControlNumbers[j];
+//					uopteff = eff;
+//				}
+//			}
+//			
+//			maxEff += uopteff;
+//			stateNum = nextState;
+//			nextState = FullNextState[nextState][uopt];
+//			
+//		}
+//
+//		vector <PackageState> p = FullState[stateNum];
+//		for (int j = 0; j < Packages.size();j++){
+//			cout << p[j] << " ";
+//		}
+//		cout << endl;
+//		OneControl c = FullControl[stateNum][uopt];
+//			for (int j = 0; j < Packages.size();j++){
+//			cout << c[j] << " ";
+//		}
+//		cout << endl;
+//		cout << "Next state num: " << nextState << endl;
+//		tbegin +=delta;
+//	}
+//	
+//	return maxEff;
+//}
+//
+//
 
 
 Model::~Model(void)
