@@ -4,8 +4,6 @@
 #include "Workflow.h"
 #include "ResourceType.h"
 
-#include "Node.h"
-#include "Package.h"
 
 typedef tuple <int,int,int> OnePackageControl; // (number of package, number of node, core count)
 typedef vector <OnePackageControl> OneControl; // (number of package1, number of node, core count), ..., (number of packageN, number of node, core count)
@@ -28,6 +26,8 @@ class Model
 	vector <Workflow*> Workflows;
 	std::vector <ResourceType*> Resources;
 	std::vector <int> forcedBricks;
+	float koeff;
+	friend class Workflow;
 	// methods
 	void InitResources(string);
 	void InitWorkflows(string);
@@ -36,9 +36,6 @@ class Model
 
 	vector <pair<int,int>> diff;
 	float maxEfficiency ;
-	
-	vector <int> leftBorders;
-	vector <int> freeCores;
 	vector <State> States;
 	vector <int> repeatCounts;
 	State FullState;
@@ -48,27 +45,25 @@ class Model
 	vector <int> pControlNumbers;
 	NextStates FullNextState;
 	
-	vector <Node*> Nodes;
-	vector <Package*> Packages;
+	
 	
 public:
-	Model(){for (int i = 0; i < T; i+= delta) leftBorders.push_back(i);}
-	int allCoresCount;
-	float koeff;
-	float Greedy(int uopt, float currentEff);
-	void GetStageInformation(int stage);
+	Model(){}
+	void Init (string resFile, string wfFile);
 	float efficiencyFunction(float x) { return (koeff*(1-x)); }
 	float EfficiencyByPeriod(int busyCores, int t1, int t2){
 		return ( busyCores * (float)(t2-t1)/(float)T * (efficiencyFunction((float)t1/(float)T) + efficiencyFunction((float)t2/(float)T)) / 2  );
 	}
-	void CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls);
-	void SetFreeCores(int tbegin);
+	// debug and time measurement functions
+	int GetStatesCount() {return Workflows[0]->GetStatesCount();}
 	
+	
+	float Greedy(int uopt, float currentEff);
+	void GetStageInformation(int stage);
+	void CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls);
 	PossibleControls GetStateControls(int stateNumber, ofstream& file);
 	void GetOneStageControls(int tbegin);
-	void Init();
-	void Init (string resFile, string wfFile);
-	State GetStates(const char *filename, vector <int> packages, vector <int> freeCores, int workflowSize);
+	State GetStates(string filename, int initPackage, int wfNum);
 	void OneStep(int periodNumber);
 	vector <int> GetUOptsByStateNumber(int stateNum, int tbegin, ofstream &file, float & ef); //returns vector <number of uopts>
 	int GetBusyCores(OneControl& control);
@@ -81,7 +76,7 @@ public:
 	float GetEfficiency(OneControl& control, int, int);
 	PossibleControls CheckControls(int i, int);
 	int GetTRealBegin(int l, float level, int periodBegin);
-	float GetMaxEfficiency(){
+	/*float GetMaxEfficiency(){
 		float eff = 0.0;
 		for (int i = 0; i < Nodes.size(); i++){
 			multimap <int,pair<int,int>> bi = Nodes[i]->GetBusyIntervals();
@@ -96,7 +91,7 @@ public:
 		}
 		maxEfficiency = 1-eff;
 		return maxEfficiency;
-	}
+	}*/
 	~Model(void);
 };
 

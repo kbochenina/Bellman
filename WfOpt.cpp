@@ -2,58 +2,67 @@
 //
 
 #include "stdafx.h"
-#include "Node.h"
-#include "Package.h"
 #include "Model.h"
+#include <cstdlib>
 
 	int T, delta, stages;
 	vector<int> stageBorders;
-
-int _tmain(int argc, _TCHAR* argv[])
+	
+int _tmain(int argc, wchar_t** argv)
 {
-	string fileResources, fileWorkflows;
+	wstring fileResources, fileWorkflows, fileEx;
 	if (argc == 1) {
 		T = 43200;
-		delta = 5400;
-		fileResources = "res_t2_p0.5_r2_c2_2";
-		fileWorkflows = "n-10_f-0.2_d-0.2_r-0.8_c-1_j-2.1";
+		delta = 3600;
+		fileResources = L"res_t2_p0.5_r2_c2_2";
+		fileWorkflows = L"n-20_f-0.1_d-0.2_r-0.2_c-0_j-2.0";
+		fileEx = L"defaultExperRes.txt";
 	}
-	stages = T/delta;
-	for (int i = 0; i <= T; i+=delta) stageBorders.push_back(i);
-	double start = clock();
-	 
-	Model m;
-	m.Init(fileResources, fileWorkflows);
-	
+	else {
+		T = 43200;
+		delta = 3600;
+		fileResources = argv[1];
+		wcout << fileResources << endl;
+		fileWorkflows = argv[2];
+		wcout << fileWorkflows << endl;
+		fileEx = argv[3];
+		wcout << fileEx << endl;
+	}
 
-	//m.SetFullState();
-	//cout << "Time of set full states " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
-	////m.GetStageInformation(8);
-	////m.Simple();
-	//int stages = T/delta-1;
-	//for (int i = stages; i > 0; i--)
-	//	m.GetStageInformation(i);
-	///*m.GetStageInformation(3);
-	//m.GetStageInformation(2);
-	//m.GetStageInformation(1);*/
-	//m.DirectBellman();
-	//cout << "Max efficiency: " << m.GetMaxEfficiency() << endl;
-	//m.Zhadina();
-	//m.GetFullState("fullState.txt");
-	//m.OneStep(3);
-	//m.OneStep(2);
-	//m.CreateTuples();
-	//m.SetPackagesAvaliableStates();
-	//m.SetStates(20000);
-	//m.ShowPackageAvaliableState(0);
-	//m.ShowTuples();
-	//m.SetFreeCores(20000);
-	//m.GetOneStageControls(20000);
-	//ofstream file("709.txt");
-	//m.GetStateControls(709, file);
-	cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
-	cout << endl;
-	system("pause");
+	try {
+		string openErr = "File with experiment result cannot be open";
+		ofstream ex(fileEx, ios::app);
+		if (ex.fail()) throw openErr;
+		
+		stages = T/delta;
+		for (int i = 0; i <= T; i+=delta) stageBorders.push_back(i);
+		double start = clock();
+		 string sR(fileResources.begin(), fileResources.end()), 
+			 sW(fileWorkflows.begin(), fileWorkflows.end());
+		ex << sW << endl;
+		Model m;
+		m.Init(sR, sW);
+		
+
+		m.SetFullState();
+		ex << "Time of set full states " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
+		ex << m.GetStatesCount() << endl;
+		//for (int i = stages; i > 0; i--)
+		//	m.GetStageInformation(i);
+	
+		//m.DirectBellman();
+		//cout << "Max efficiency: " << m.GetMaxEfficiency() << endl;
+	
+		ex.close();
+		cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
+		cout << endl;
+		system("pause");
+	}
+	catch(const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
 	return 0;
 }
 
