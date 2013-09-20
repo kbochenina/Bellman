@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 	int T, delta, stages;
+	ofstream ex;
 	vector<int> stageBorders;
 	
 int _tmain(int argc, wchar_t** argv)
@@ -31,7 +32,7 @@ int _tmain(int argc, wchar_t** argv)
 
 	try {
 		string openErr = "File with experiment result cannot be open";
-		ofstream ex(fileEx, ios::app);
+		ex.open(fileEx, ios::app);
 		if (ex.fail()) throw openErr;
 		
 		stages = T/delta;
@@ -56,7 +57,7 @@ int _tmain(int argc, wchar_t** argv)
 		ex.close();
 		cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
 		cout << endl;
-		system("pause");
+		//system("pause");
 	}
 	catch(const string msg){
 		cout << msg << endl;

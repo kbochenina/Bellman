@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 
+extern ofstream ex;
 
 class Workflow{
 	int wfNum;
@@ -11,6 +12,11 @@ class Workflow{
 	std::vector <std::vector <int>> connectMatrix;
 	vector <vector<int>> packagesStates; // (stateNum for P1, stateNum for P2, ...)
 	vector <ResourceType*>& _refResources; // for checking states correct by full core count
+	float elapsedTime; // need to terminate function execution
+	float maxPossibleTime;
+	float beginTime;
+	vector <vector<vector<pair<int,int>>>> controls; // (type, coreNum)
+	vector<vector<pair<int,int>>> oneStateControls;
 	public:
 	Workflow (std::vector <Package*>, std::vector <std::vector <int>>, int, vector <ResourceType*>&);
 	std::vector <Package*> GetPackages() {return packages;} // is useful??
@@ -28,4 +34,5 @@ class Workflow{
 	bool Check (const int& state, const vector <int> & otherStates, const int & currentPackage); // check if state is compatible with other states
 	void PrintPackagesStates();
 	int GetStatesCount() {return packagesStates.size();}
+	void GetControls (vector<int>& newState, int);
 };
