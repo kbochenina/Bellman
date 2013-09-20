@@ -1,11 +1,25 @@
 #include "stdafx.h"
 #include "Workflow.h"
+#include "time.h"
 
 
 Workflow::Workflow (std::vector <Package*> p, std::vector <std::vector <int>> c, int w, vector <ResourceType*>& r) : _refResources(r){
 	packages = p;
 	connectMatrix = c;
 	wfNum = w;
+	maxPossibleTime = 120.0 * 1000;
+	elapsedTime = 0.0;
+	
+	// find count of zero rows
+	int zeroCount = 0;
+	for (int i = 0; i < packages.size(); i++){
+		bool isZero = true;
+		for (int j = 0; j < packages.size(); j++){
+			if (connectMatrix[i][j]) isZero = false;
+		}
+		if (isZero) zeroCount++;
+	}
+	ex << "Zero count: " << zeroCount << endl;
 }
 
 void Workflow::SetPackagesStates(){
@@ -27,10 +41,12 @@ void Workflow::SetIsPackageInit(){
 }
 
 void Workflow::SetFullPackagesStates(int currentPackage){
+	if (currentPackage == 0) beginTime = clock();
 	// if it is the last package
 	try{
 		string errWrongPackageNumber = "SetFullPackagesStates(): workflow " + to_string((long long)wfNum) 
 			+ " has no package " + to_string((long long)currentPackage); 
+		string notEnoughTime = "SetFullPackageStates() was terminated, time was more than " + to_string((long double)maxPossibleTime/1000.0) + " s";
 		if (currentPackage == packages.size()-1) {
 			vector <int> lastPackageStates;
 			for (int i = 0; i < packages[currentPackage]->GetStatesCount(); i++) {
@@ -54,7 +70,10 @@ void Workflow::SetFullPackagesStates(int currentPackage){
 						for (int k = 1; k <= packagesStates[j].size(); k++)
 							newState[k] = packagesStates[j][k-1];
 						newStates.push_back(newState);
+						if (currentPackage == 0) GetControls(newState, 0);
 					}
+					elapsedTime =(clock()-beginTime);
+					if (elapsedTime > maxPossibleTime) throw notEnoughTime;
 				}
 			}
 			packagesStates = newStates;
@@ -62,8 +81,27 @@ void Workflow::SetFullPackagesStates(int currentPackage){
 	}
 	catch(const string msg){
 		cout << msg << endl;
-		system("pause");
+		ex << msg << endl;
+		//system("pause");
 		exit(EXIT_FAILURE);
+	}
+}
+
+void Workflow::GetControls(vector<int>& newState, int currentNum){
+	if (currentNum == 0) oneStateControls.clear();
+	if (currentNum == packages.size()-1){
+		float level = packages[currentNum]->GetLevel(newState[currentNum]);
+		if (level == -1 || level == 1) {
+			vector <pair<int,int>> solution;
+			solution.push_back(make_pair(0, 0));
+			oneStateControls.push_back(solution);
+		}
+		else {
+			vector <int> r, c;
+			packages[currentNum]->GetResourceTypes(r);
+			packages[currentNum]->GetCoreCounts(c);
+		}
+
 	}
 }
 

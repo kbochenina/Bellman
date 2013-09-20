@@ -23,6 +23,8 @@ public:
 	int GetLevel(int stateNum) {return packageStates[stateNum].get<2>();}
 	int GetCore(int stateNum) {return packageStates[stateNum].get<1>();}
 	int GetType(int stateNum) {return packageStates[stateNum].get<0>();}
+	void GetResourceTypes(vector<int>&r) {r = resourceTypes;}
+	void GetCoreCounts(vector<int>&c) {c = coreCounts;}
 	void PrintState (ofstream & f, int &state);
 	~Package(void);
 };

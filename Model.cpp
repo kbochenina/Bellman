@@ -256,12 +256,12 @@ void Model::InitWorkflows(string f){
 			Workflows[i]->SetIsPackageInit();
 			Workflows[i]->SetPackagesStates();
 			Workflows[i]->SetFullPackagesStates(0);
-			Workflows[i]->PrintPackagesStates();
+			//Workflows[i]->PrintPackagesStates();
 		}
 	}
 	catch (const string msg){
 		cout << msg << endl;
-		system("pause");
+		//system("pause");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -613,191 +613,7 @@ void Model::SetFullState(){
 	fileControl.close();
 }
 
-// initPackage and wfNum - from zero
-//State Model::GetStates(string filename, int initPackage, int wfNum){
-//	State result, oneResult,  otherResults;
-//	ofstream file(filename);
-//	vector <PackageState> oneState, fullState;
-//	int package, node, core; float level;
-//	// if we have one package
-//	if (packages.size() == 1) {
-//		package = packages.back();
-//		node = 0;
-//		core = 0;
-//		level = -1;
-//		int flagNotInit = true;
-//		for (int i = 0; i < Workflows.size(); i++){
-//			if (Workflows[i]->isPackageIn(package) && Workflows[i]->IsInit(package)) 
-//				flagNotInit = false; }
-//		if (flagNotInit) {
-//		oneState.push_back(make_tuple(package, node, core, level));
-//		result.push_back(oneState);
-//		//for (vector<PackageState>::iterator i = oneState.begin(); i!=oneState.end(); i++)
-//			//file  << (*i) << " " ; file << endl;
-//		oneState.clear();
-//		}
-//		node = 0;
-//		core = 0;
-//		level = 0;
-//		oneState.push_back(make_tuple(package, node, core, level));
-//		result.push_back(oneState);
-//		//for (vector<PackageState>::iterator i = oneState.begin(); i!=oneState.end(); i++)
-//		//	file  << (*i) << " " ; file << endl;
-//		
-//		//for (vector<PackageState>::iterator i = oneState.begin(); i!=oneState.end(); i++)
-//		//	file  << (*i) << " " ; file << endl;
-//		oneState.clear();
-//		
-//		vector <int> possibleNodes = Packages[package-1]->GetNodeNumbers();
-//		vector <int> possibleCores = Packages[package-1]->GetCoreCounts();
-//		for (int i = 0; i < possibleNodes.size(); i++)
-//		{
-//			int nodeNumber = possibleNodes[i]; // number of node
-//			for (int j = 0; j < possibleCores.size(); j++)
-//			{
-//				int l = Packages[package-1]->GetExecTime(nodeNumber,possibleCores[j]);
-//				if (freeCores[nodeNumber-1] >= possibleCores[j])
-//				{
-//					int val = l/delta + 1;
-//					float f = 1/(float)val;
-//					for (float k = f; k < 1; k+= f)
-//					{
-//						if (l >=delta){
-//						oneState.push_back(make_tuple(package,nodeNumber, j+1, k));
-//						result.push_back(oneState);
-//						//for (vector<PackageState>::iterator i = oneState.begin(); i!=oneState.end(); i++)
-//						//file << (*i) << " " ;
-//						//file << endl;
-//						oneState.clear();
-//						}
-//					}
-//				}
-//			}
-//		}
-//		oneState.clear();
-//		node = 0;
-//		core = 0;
-//		level = 1;
-//		oneState.push_back(make_tuple(package, node, core, level));
-//		result.push_back(oneState);
-//		
-//		//result.push_back(oneState);
-//	}
-//	// if we have more than one package 
-//	else {
-//		bool flag = true;
-//		vector <int> onePackage, otherPackages;
-//		onePackage.push_back(packages[0]);
-//		for (int i = 1; i < packages.size(); i++) otherPackages.push_back(packages[i]);
-//		oneResult = GetStates(filename, onePackage, freeCores,workflowSize);
-//		otherResults = GetStates(filename, otherPackages, freeCores, workflowSize);
-//		
-//		vector <vector <PackageState>>::iterator it1, it2;
-//		//cout << "size = " << packages.size() << endl;
-//		for (it1 = oneResult.begin(); it1!=oneResult.end(); it1++)
-//		{
-//			for (it2 = otherResults.begin(); it2!=otherResults.end(); it2++)
-//			{
-//				bool flag = true;
-//				//vector <bool> flags;
-//				//for (int i = 0; i < otherPackages.size(); i++) flags.push_back(true);
-//				// check for model constraints
-//				int onePackageNum = (*it1)[0].get<0>();
-//				vector <PackageState>::iterator it3 = (*it2).begin();
-//				// for all other packages states
-//				for (it3; it3!=(*it2).end(); it3++){
-//					if (flag!=false)
-//					{
-//						int otherPackageNum = (*it3).get<0>(); 
-//						// for all workflows
-//						for (int i = 0; i < Workflows.size(); i++){
-//							// if packages are in the same workflow
-//							if (Workflows[i]->isPackagesBothIn(onePackageNum,otherPackageNum))
-//							{
-//								// and otherPackage depends on onePackage
-//								if (Workflows[i]->isDepends(onePackageNum,otherPackageNum))
-//								{
-//									//cout << "First: " << (*it1)[0] << " Second: " << *it3 << endl;
-//									if (Workflows[i]->IsInit(onePackageNum) && (*it1)[0].get<3>()==-1) flag =  false;
-//									if ((*it1)[0].get<3>()<1 && (*it3).get<3>()!=-1) flag = false;
-//									if ((*it1)[0].get<3>()!=1 && (*it3).get<3>()!=-1) flag = false;
-//									if ((*it1)[0].get<3>()==-1 && (*it3).get<3>()!=-1) flag = false;
-//									if ((*it1)[0].get<3>()==1 &&(*it3).get<3>()==-1) {
-//										if (otherPackages.size()+1 == workflowSize){
-//											flag = false;
-//											vector <PackageState>::iterator addIt = (*it2).begin();
-//											int numIsReady = 0, numDepends = 0;
-//											for (; addIt !=(*it2).end() ; addIt++)
-//											{
-//												int addPackageNum = (*addIt).get<0>(); 
-//												int basePackageNum = (*it3).get<0>();
-//												if (addPackageNum!=basePackageNum){
-//													if (Workflows[i]->isDepends(addPackageNum,basePackageNum)){
-//														numDepends ++;
-//														if ((*addIt).get<3>()!=1) flag = true;
-//														else if ((*addIt).get<3>()==1) numIsReady++;
-//													}
-//												}
-//											}
-//											if (numIsReady == numDepends) flag = false;
-//										}
-//									}
-//									if ((*it1)[0].get<3>()==-1 && (*it3).get<3>()==-1) flag = true;
-//									
-//									//file << (*it1)[0] << " and " << *it3 << " = " << flag << endl;
-//								}
-//							}
-//						} // for
-//					} // if
-//				} // for
-//				// check for cores constraints
-//				// for all nodes
-//				if (flag == true) {
-//					for (int i = 0; i < Nodes.size(); i++)
-//					{
-//						// max value of cores
-//						int max = Nodes[i]->GetCoreCount();
-//						int oneNode = (*it1)[0].get<1>(), oneCoreCount = 0;
-//						if (oneNode == i+1) oneCoreCount = (*it1)[0].get<2>();
-//						vector <PackageState>::iterator it3 = (*it2).begin();
-//						// for all other packages states
-//						for (it3; it3!=(*it2).end(); it3++){
-//							oneNode = (*it3).get<1>();
-//							if (oneNode == i+1) oneCoreCount +=(*it3).get<2>();
-//							if (oneCoreCount > max) { flag = false; }
-//							//if (flag==true) cout << (*it1)[0] << " and " << *it3 << " = " << flag << endl;
-//						}
-//					}
-//				}
-//				if (flag == true )// && oneState.size()!=0) 
-//				{
-//					fullState.push_back((*it1)[0]);
-//					for (it3 = (*it2).begin(); it3!=(*it2).end(); it3++){
-//						fullState.push_back(*it3);
-//					}
-//					
-//					/*if (fullState.size() == packages.size())
-//					{
-//										
-//						cout << endl;
-//					}*/
-//					result.push_back(fullState);
-//					fullState.clear();
-//				}
-//				
-//			}
-//		}
-//	}
-//	vector <vector <PackageState>>::iterator it = result.begin();
-//	for (; it!=result.end(); it++){
-//		for (vector <PackageState>::iterator j = it->begin(); j!= it->end(); j++)
-//			file << *j << " ";
-//		file << endl;
-//	}
-//	file.close();
-//	
-//	return result;
-//}
+
 
 //void Model::CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls){
 //	vector <int> impossibleStateNumbers;
