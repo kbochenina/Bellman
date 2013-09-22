@@ -1,0 +1,123 @@
+Workflows count = 1
+Workflow 1 (20 packages)
+Package 1
+Alpha: 0.07
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 52149
+Package 2
+Alpha: 0
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 89928
+Package 3
+Alpha: 0.16
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 183880
+Package 4
+Alpha: 0.21
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 187781
+Package 5
+Alpha: 0.17
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 149814
+Package 6
+Alpha: 0.03
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 85759
+Package 7
+Alpha: 0.12
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 84461
+Package 8
+Alpha: 0.21
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 110236
+Package 9
+Alpha: 0.18
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 146567
+Package 10
+Alpha: 0.05
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 132201
+Package 11
+Alpha: 0.21
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 88835
+Package 12
+Alpha: 0.18
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 183013
+Package 13
+Alpha: 0.04
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 61077
+Package 14
+Alpha: 0.14
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 54924
+Package 15
+Alpha: 0.11
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 38790
+Package 16
+Alpha: 0.18
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 190604
+Package 17
+Alpha: 0.23
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 86945
+Package 18
+Alpha: 0.23
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 128640
+Package 19
+Alpha: 0.1
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 16980
+Package 20
+Alpha: 0.22
+Resources types: -1
+Cores count: 1, 2, 4
+Computation amount: 33417
+Connectivity matrix: 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 
+0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 1 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0 1 
+0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 1 
+0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 

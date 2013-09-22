@@ -12,13 +12,16 @@ class Workflow{
 	std::vector <std::vector <int>> connectMatrix;
 	vector <vector<int>> packagesStates; // (stateNum for P1, stateNum for P2, ...)
 	vector <ResourceType*>& _refResources; // for checking states correct by full core count
+	vector <pair<unsigned short, unsigned short>> &_reftypesCores; // typesCores from Model for PrintControl() function
 	float elapsedTime; // need to terminate function execution
 	float maxPossibleTime;
-	float beginTime;
-	vector <vector<vector<pair<int,int>>>> controls; // (type, coreNum)
-	vector<vector<pair<int,int>>> oneStateControls;
+	float beginTime, prevBeginTime;
+	vector <vector<vector<int>>> controls; // index in typesCores, -1 means (0,0)
+	vector<vector<int>> oneStateControls;
+	vector <vector<vector<int>>> nextPackageStateNumbers; // for each state:  for each control - packages next state numbers
+	vector <vector<int>> nextStateNumbers;
 	public:
-	Workflow (std::vector <Package*>, std::vector <std::vector <int>>, int, vector <ResourceType*>&);
+	Workflow (std::vector <Package*>, std::vector <std::vector <int>>, int, vector <ResourceType*>&, vector <pair<unsigned short, unsigned short>> &);
 	std::vector <Package*> GetPackages() {return packages;} // is useful??
 	int GetPackageCount(){return packages.size();}
 	int GetExecTime(int pNum, int type, int cores) {return packages[pNum]->GetExecTime(type, cores);}
@@ -35,4 +38,7 @@ class Workflow{
 	void PrintPackagesStates();
 	int GetStatesCount() {return packagesStates.size();}
 	void GetControls (vector<int>& newState, int);
+	bool CheckCores(pair<int,int> &, vector<int>&);
+	void SetNextStateNumbers();
+	void PrintControls();
 };

@@ -10,6 +10,48 @@ Package::Package(int u, vector <int> &r, vector <int> &c, map <pair <int,int>, f
 	execTime = e;
 }
 
+float Package::GetLevel(int stateNum) {
+	try {
+		string errMsg = "Package::GetLevel() error: package " + to_string((long long)uid) + " - unable to get stateNum " +
+			to_string((long long)stateNum);
+		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw errMsg;
+		return packageStates[stateNum].get<2>();
+	}
+	catch(const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+int Package::GetCore(int stateNum) {
+	try {
+		string errMsg = "Package::GetCore() error: package " + to_string((long long)uid) + " - unable to get stateNum " +
+			to_string((long long)stateNum);
+		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw errMsg;
+		return packageStates[stateNum].get<1>();
+	}
+	catch(const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+int Package::GetType(int stateNum) {
+	try {
+		string errMsg = "Package::GetType() error: package " + to_string((long long)uid) + " - unable to get stateNum " +
+			to_string((long long)stateNum);
+		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw errMsg;
+		return packageStates[stateNum].get<0>();
+	}
+	catch(const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
 void Package::SetPackageStates(){
 	try {
 		string errTimeNotFound = "No execution time for package " + uid;

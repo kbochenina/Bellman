@@ -11,12 +11,13 @@
 	
 int _tmain(int argc, wchar_t** argv)
 {
+	
 	wstring fileResources, fileWorkflows, fileEx;
 	if (argc == 1) {
 		T = 43200;
 		delta = 3600;
-		fileResources = L"res_t2_p0.5_r2_c2_2";
-		fileWorkflows = L"n-20_f-0.1_d-0.2_r-0.2_c-0_j-2.0";
+		fileResources = L"res_t4_p0.25_r4_c4_2";
+		fileWorkflows = L"n-5_f-0.2_d-0.8_r-0.8_c-0_j-4.1";
 		fileEx = L"defaultExperRes.txt";
 	}
 	else {
@@ -57,7 +58,7 @@ int _tmain(int argc, wchar_t** argv)
 		ex.close();
 		cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
 		cout << endl;
-		//system("pause");
+		system("pause");
 	}
 	catch(const string msg){
 		cout << msg << endl;
