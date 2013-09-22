@@ -248,7 +248,7 @@ void Model::InitWorkflows(string f){
 				connectMatrix.push_back(row);
 			}
 			
-			Workflows.push_back(new Workflow(pacs,connectMatrix,i+1, Resources));
+			Workflows.push_back(new Workflow(pacs,connectMatrix,i+1, Resources, typesCores));
 			pacs.clear();
 			connectMatrix.clear();
 		}
@@ -256,12 +256,13 @@ void Model::InitWorkflows(string f){
 			Workflows[i]->SetIsPackageInit();
 			Workflows[i]->SetPackagesStates();
 			Workflows[i]->SetFullPackagesStates(0);
-			//Workflows[i]->PrintPackagesStates();
+			Workflows[i]->PrintPackagesStates();
+			Workflows[i]->PrintControls();
 		}
 	}
 	catch (const string msg){
 		cout << msg << endl;
-		//system("pause");
+		system("pause");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -398,13 +399,21 @@ void Model::InitResources(string f){
 					busyIntervals.insert(make_pair(k+1, oneResDiaps));
 				}
 				Resource oneRes(j+1,  coresCount, busyIntervals);
+				
 				typeResources.push_back(oneRes);
 			}
 			Resources.push_back(new ResourceType(i+1, typeResources, perf));
+			
 		}
 		
-		for (int i = 0; i < Resources.size(); i++) 
+		int initVal = 0;
+		for (int i = 0; i < Resources.size(); i++) {
 			Resources[i]->CorrectBusyIntervals(stageBorders);
+			unsigned short fullCoresCount = Resources[i]->GetCoresCount();
+			for (int j = 0; j < fullCoresCount; j++) typesCores.push_back(make_pair(i+1, j+1));
+			Resources[i]->SetInitLastVals(initVal, initVal+fullCoresCount - 1);
+			initVal +=fullCoresCount;
+		}
 		SetForcedBricks();
 		int allCoresCount = 0;
 		for (int i = 0; i < Resources.size(); i++) {

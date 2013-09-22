@@ -27,6 +27,7 @@ class Model
 	std::vector <ResourceType*> Resources;
 	std::vector <int> forcedBricks;
 	float koeff;
+	vector <pair<unsigned short, unsigned short>> typesCores;
 	friend class Workflow;
 	// methods
 	void InitResources(string);

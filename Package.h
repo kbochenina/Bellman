@@ -20,9 +20,9 @@ public:
 	void SetIsInit(bool i) {isInit = i;}
 	void SetPackageStates();
 	int GetStatesCount() {return packageStates.size();}
-	int GetLevel(int stateNum) {return packageStates[stateNum].get<2>();}
-	int GetCore(int stateNum) {return packageStates[stateNum].get<1>();}
-	int GetType(int stateNum) {return packageStates[stateNum].get<0>();}
+	float GetLevel(int stateNum);
+	int GetCore(int stateNum);
+	int GetType(int stateNum);
 	void GetResourceTypes(vector<int>&r) {r = resourceTypes;}
 	void GetCoreCounts(vector<int>&c) {c = coreCounts;}
 	void PrintState (ofstream & f, int &state);

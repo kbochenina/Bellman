@@ -1,0 +1,403 @@
+Resources count = 128
+Resources types count = 8
+Type 1 (16 resources, 1 cores)
+Performance (GFlops): 31
+Resource 1
+Core 1 0
+Resource 2
+Core 1 0
+Resource 3
+Core 1 0
+Resource 4
+Core 1 2
+25813  36372
+40446  41751
+Resource 5
+Core 1 0
+Resource 6
+Core 1 2
+26847  30515
+39928  42248
+Resource 7
+Core 1 1
+4475  8832
+Resource 8
+Core 1 1
+24629  32477
+Resource 9
+Core 1 0
+Resource 10
+Core 1 0
+Resource 11
+Core 1 2
+32522  38406
+38712  40254
+Resource 12
+Core 1 0
+Resource 13
+Core 1 2
+2181  8918
+25609  36418
+Resource 14
+Core 1 1
+29114  35710
+Resource 15
+Core 1 0
+Resource 16
+Core 1 1
+23700  25986
+Type 2 (16 resources, 1 cores)
+Performance (GFlops): 9
+Resource 1
+Core 1 0
+Resource 2
+Core 1 2
+23280  24885
+34703  37309
+Resource 3
+Core 1 0
+Resource 4
+Core 1 0
+Resource 5
+Core 1 1
+20951  28630
+Resource 6
+Core 1 1
+17767  20804
+Resource 7
+Core 1 2
+23723  39526
+39554  41092
+Resource 8
+Core 1 2
+9876  19746
+40167  43044
+Resource 9
+Core 1 1
+20781  30656
+Resource 10
+Core 1 2
+6888  16177
+35359  41969
+Resource 11
+Core 1 0
+Resource 12
+Core 1 0
+Resource 13
+Core 1 2
+23077  36056
+39223  42675
+Resource 14
+Core 1 0
+Resource 15
+Core 1 0
+Resource 16
+Core 1 2
+27329  27670
+42160  42796
+Type 3 (16 resources, 1 cores)
+Performance (GFlops): 31
+Resource 1
+Core 1 1
+18695  22743
+Resource 2
+Core 1 1
+27302  32811
+Resource 3
+Core 1 0
+Resource 4
+Core 1 0
+Resource 5
+Core 1 2
+19551  24407
+40175  41505
+Resource 6
+Core 1 2
+17888  34108
+37285  40659
+Resource 7
+Core 1 2
+26799  38996
+41365  43179
+Resource 8
+Core 1 1
+32040  34429
+Resource 9
+Core 1 1
+24921  40502
+Resource 10
+Core 1 2
+21245  30771
+41982  42314
+Resource 11
+Core 1 2
+12024  16146
+24165  33758
+Resource 12
+Core 1 2
+11315  26473
+42478  42531
+Resource 13
+Core 1 0
+Resource 14
+Core 1 0
+Resource 15
+Core 1 2
+15759  25228
+39368  41826
+Resource 16
+Core 1 2
+12045  26456
+27670  30768
+Type 4 (16 resources, 1 cores)
+Performance (GFlops): 51
+Resource 1
+Core 1 1
+23603  32723
+Resource 2
+Core 1 0
+Resource 3
+Core 1 1
+4231  6965
+Resource 4
+Core 1 1
+22341  26861
+Resource 5
+Core 1 2
+30129  31262
+32212  39763
+Resource 6
+Core 1 2
+27357  33688
+38556  43062
+Resource 7
+Core 1 0
+Resource 8
+Core 1 2
+28325  37317
+41802  42877
+Resource 9
+Core 1 2
+20888  30369
+34460  42140
+Resource 10
+Core 1 0
+Resource 11
+Core 1 0
+Resource 12
+Core 1 2
+22416  37874
+41256  42599
+Resource 13
+Core 1 1
+24141  24369
+Resource 14
+Core 1 0
+Resource 15
+Core 1 2
+22555  30369
+33283  37001
+Resource 16
+Core 1 2
+32412  34820
+37668  38475
+Type 5 (16 resources, 1 cores)
+Performance (GFlops): 39
+Resource 1
+Core 1 0
+Resource 2
+Core 1 2
+1181  12055
+34642  39985
+Resource 3
+Core 1 0
+Resource 4
+Core 1 1
+30298  39051
+Resource 5
+Core 1 1
+13702  16099
+Resource 6
+Core 1 0
+Resource 7
+Core 1 2
+18218  18236
+27545  34622
+Resource 8
+Core 1 2
+29001  36524
+42485  42979
+Resource 9
+Core 1 2
+26471  39452
+42344  42391
+Resource 10
+Core 1 0
+Resource 11
+Core 1 1
+30090  31226
+Resource 12
+Core 1 1
+27660  34858
+Resource 13
+Core 1 2
+8483  21182
+25765  27064
+Resource 14
+Core 1 1
+25019  32087
+Resource 15
+Core 1 1
+31018  42221
+Resource 16
+Core 1 0
+Type 6 (16 resources, 1 cores)
+Performance (GFlops): 34
+Resource 1
+Core 1 2
+18174  21542
+29657  40722
+Resource 2
+Core 1 1
+15725  21375
+Resource 3
+Core 1 1
+5413  25279
+Resource 4
+Core 1 0
+Resource 5
+Core 1 1
+18604  25715
+Resource 6
+Core 1 1
+27760  29684
+Resource 7
+Core 1 1
+5728  26794
+Resource 8
+Core 1 0
+Resource 9
+Core 1 1
+13549  28523
+Resource 10
+Core 1 2
+28089  28269
+30722  42117
+Resource 11
+Core 1 2
+30059  37189
+42418  42755
+Resource 12
+Core 1 1
+17066  18062
+Resource 13
+Core 1 0
+Resource 14
+Core 1 1
+6144  12646
+Resource 15
+Core 1 1
+7194  23113
+Resource 16
+Core 1 1
+2665  16706
+Type 7 (16 resources, 1 cores)
+Performance (GFlops): 50
+Resource 1
+Core 1 1
+18176  31694
+Resource 2
+Core 1 1
+21505  27084
+Resource 3
+Core 1 1
+26649  38916
+Resource 4
+Core 1 0
+Resource 5
+Core 1 2
+32767  40717
+40758  41892
+Resource 6
+Core 1 0
+Resource 7
+Core 1 1
+25041  30264
+Resource 8
+Core 1 1
+19984  21335
+Resource 9
+Core 1 1
+19459  23725
+Resource 10
+Core 1 1
+14094  32976
+Resource 11
+Core 1 1
+3374  11243
+Resource 12
+Core 1 0
+Resource 13
+Core 1 2
+22778  33639
+35829  36694
+Resource 14
+Core 1 0
+Resource 15
+Core 1 0
+Resource 16
+Core 1 1
+20785  26577
+Type 8 (16 resources, 1 cores)
+Performance (GFlops): 9
+Resource 1
+Core 1 0
+Resource 2
+Core 1 0
+Resource 3
+Core 1 2
+26280  34586
+35163  40144
+Resource 4
+Core 1 1
+24217  34366
+Resource 5
+Core 1 2
+22060  24925
+42153  42279
+Resource 6
+Core 1 2
+22112  36172
+42773  42878
+Resource 7
+Core 1 0
+Resource 8
+Core 1 2
+19397  25391
+30299  31132
+Resource 9
+Core 1 1
+6151  16019
+Resource 10
+Core 1 2
+17020  25328
+33631  35747
+Resource 11
+Core 1 2
+15639  34951
+41628  42913
+Resource 12
+Core 1 2
+3969  8044
+24204  29231
+Resource 13
+Core 1 1
+27733  31343
+Resource 14
+Core 1 0
+Resource 15
+Core 1 2
+23038  23691
+29592  42204
+Resource 16
+Core 1 0

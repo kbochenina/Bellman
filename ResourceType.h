@@ -10,6 +10,7 @@ class ResourceType
 	int type;
 	int numCoresPerOneRes;
 	float perf;
+	unsigned short initVal, lastVal; // first and last index in typesCores
 	std::vector <int> forcedBricks;
 	std::vector<std::vector <int>> allCoresFreeTimes; // (stageNum, (core1TimeEnd, core2TimeEnd...,coreN))
 	std::vector <Resource> resources;
@@ -22,6 +23,8 @@ class ResourceType
 	int GetResourceCount(){return resources.size();}
 	Resource& operator[](const int index){return resources[index];}
 public:
+	void SetInitLastVals(unsigned short i, unsigned short l) {initVal = i; lastVal = l;}
+	unsigned short GetInitVal(){return initVal;}
 	void SetFreeTimeEnds(); // if we want to set default free time ends;
 	void SetFreeTimeEnds(const std::vector<int>&);
 	void SetForcedBricks(std::vector <int> fB) { forcedBricks = fB;}
