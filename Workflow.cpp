@@ -175,11 +175,16 @@ void Workflow::GetControls(vector<int>& newState, int currentNum){
 					if (currentControl[i].first == -1 || CheckCores(currentControl[i], oneStateControls[j])){
 						if (currentControl[i].first == -1) {
 							newControl.push_back(-1);
-							if (currentNum == 0) nextStates.push_back(newState[currentNum]);
+							if (currentNum == 0) 
+								nextStates.push_back(newState[currentNum]);
 						}
 						else {
 							newControl.push_back(_refResources[currentControl[i].first-1]->GetInitVal() + currentControl[i].second - 1);
-							if (currentNum == 0) nextStates.push_back(newState[currentNum]+1);
+							if (currentNum == 0) {
+								int nextStateNum = packages[currentNum]->GetNextStateNum(newState[currentNum], currentControl[i].first,
+									currentControl[i].second);
+								nextStates.push_back(nextStateNum);
+							}
 						}
 						for (int k = 0; k < oneStateControls[j].size(); k++) {
 							int &indexVal = oneStateControls[j][k];
@@ -187,11 +192,18 @@ void Workflow::GetControls(vector<int>& newState, int currentNum){
 							if (currentNum == 0){
 								// if first package is ready, depend packages set to state (0,0) - readyness
 								if (indexVal == -1) nextStates.push_back(newState[k+1]);
-								else nextStates.push_back(newState[k + 1]+1);
+								else {
+									int nextStateNum = packages[k+1]->GetNextStateNum(newState[k+1], _reftypesCores[indexVal].first,
+									_reftypesCores[indexVal].second);
+									nextStates.push_back(nextStateNum);
+								}
 							}
 						}
 						newControls.push_back(newControl);
-						if (currentNum == 0) nextPackagesStates.push_back(nextStates);
+						if (currentNum == 0) {
+							CheckForReadiness(nextStates);
+							nextPackagesStates.push_back(nextStates);
+						}
 					}
 				}
 			}
@@ -205,6 +217,21 @@ void Workflow::GetControls(vector<int>& newState, int currentNum){
 		ex << msg << endl;
 		system("pause");
 		exit(EXIT_FAILURE);
+	}
+}
+
+void Workflow::CheckForReadiness(vector<int>& nextStates){
+	for (int i = 0; i < nextStates.size(); i++){
+		if (!IsPackageInit(i) && nextStates[i]==0){
+			bool allPredecessorsReady = true;
+			for (int j = 0; j < connectMatrix.size(); j++){
+				if (connectMatrix[j][i]==1 && nextStates[j]!=packages[j]->GetStatesCount()-1){
+					allPredecessorsReady = false;
+					break;
+				}
+			}
+			if (allPredecessorsReady) nextStates[i]++;
+		}
 	}
 }
 
@@ -275,6 +302,7 @@ void Workflow::PrintControls(){
 	string fileName = "wf" + to_string((long long)wfNum) + "_controls.txt";
 	ofstream f(fileName);
 	for (int i = 0; i < controls.size(); i++){
+		f << "State " << i+1 << endl;
 		// print state
 		for (int j = 0; j < packagesStates[i].size(); j++){
 			packages[j]->PrintState(f, packagesStates[i][j]);
@@ -289,6 +317,11 @@ void Workflow::PrintControls(){
 				else f << "(" << _reftypesCores[control].first << " " << _reftypesCores[control].second << ")";
 			}
 			f << endl;
+			for (int k = 0; k < packagesStates[nextStateNumbers[i][j]].size(); k++){
+			packages[k]->PrintState(f, packagesStates[nextStateNumbers[i][j]][k]);
+			f << " ";
+		}
+		f << endl;
 		}
 
 	}

@@ -88,6 +88,35 @@ void Package::PrintState(ofstream & f, int &state){
 		packageStates[state].get<2>() << ")";
 }
 
+int Package::GetNextStateNum(int currentStateNum, int controlType, int controlCore){
+	try{
+		string errCurrentStateNum = "Package::GetNextStateNum() error, wrong current state num";
+		if (currentStateNum < 0 || currentStateNum > packageStates.size()-1) throw errCurrentStateNum;
+		tuple <int,int, float> currentState = packageStates[currentStateNum];
+		int currentType = currentState.get<0>();
+		if (currentType==-1) return currentStateNum;
+		if (currentType!=0) {
+			// if we have next non-1 level for this (type, core)
+			if (packageStates[currentStateNum+1].get<0>() == currentType && 
+				packageStates[currentStateNum+1].get<1>() == packageStates[currentStateNum].get<1>())
+			return currentStateNum + 1;
+			else return packageStates.size()-1;
+		}
+		if (currentType==0){
+			for (int i = currentStateNum + 1; i < packageStates.size(); i++){
+				if (controlType == packageStates[i].get<0>() && controlCore == packageStates[i].get<1>())
+					return i;
+			}
+			return packageStates.size()-1;
+		}
+	}
+	catch(const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
 Package::~Package(void)
 {
 }

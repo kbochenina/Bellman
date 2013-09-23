@@ -17,7 +17,7 @@ int _tmain(int argc, wchar_t** argv)
 		T = 43200;
 		delta = 3600;
 		fileResources = L"res_t4_p0.25_r4_c4_2";
-		fileWorkflows = L"n-5_f-0.2_d-0.8_r-0.8_c-0_j-4.1";
+		fileWorkflows = L"n-10_f-0.2_d-0.2_r-0.8_c-1_j-2.0";
 		fileEx = L"defaultExperRes.txt";
 	}
 	else {

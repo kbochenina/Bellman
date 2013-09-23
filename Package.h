@@ -26,6 +26,7 @@ public:
 	void GetResourceTypes(vector<int>&r) {r = resourceTypes;}
 	void GetCoreCounts(vector<int>&c) {c = coreCounts;}
 	void PrintState (ofstream & f, int &state);
+	int GetNextStateNum(int currentStateNum, int controlType, int controlCore);
 	~Package(void);
 };
 
