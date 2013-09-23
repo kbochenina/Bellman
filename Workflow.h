@@ -41,4 +41,5 @@ class Workflow{
 	bool CheckCores(pair<int,int> &, vector<int>&);
 	void SetNextStateNumbers();
 	void PrintControls();
+	void CheckForReadiness(vector <int>&nextState); // if all packages-predecessors are ready, state must be set to (0,0)
 };
