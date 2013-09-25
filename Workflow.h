@@ -20,6 +20,7 @@ class Workflow{
 	vector<vector<int>> oneStateControls;
 	vector <vector<vector<int>>> nextPackageStateNumbers; // for each state:  for each control - packages next state numbers
 	vector <vector<int>> nextStateNumbers;
+
 	public:
 	Workflow (std::vector <Package*>, std::vector <std::vector <int>>, int, vector <ResourceType*>&, vector <pair<unsigned short, unsigned short>> &);
 	std::vector <Package*> GetPackages() {return packages;} // is useful??

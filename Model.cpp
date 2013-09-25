@@ -18,7 +18,7 @@ bool SortPairs(pair <int, float> p1, pair <int,float> p2){
 
 void Model::Init (string resFile, string wfFile){
 	InitResources(resFile); cout << "Initialization of resources ended" << endl;
-	InitWorkflows(wfFile); cout << "Initialization of workflows ended" << endl;
+	InitWorkflows(wfFile); 
 }
 
 void Model::InitWorkflows(string f){
@@ -255,9 +255,14 @@ void Model::InitWorkflows(string f){
 		for (int i = 0; i < Workflows.size(); i++){
 			Workflows[i]->SetIsPackageInit();
 			Workflows[i]->SetPackagesStates();
+			int t = clock();
 			Workflows[i]->SetFullPackagesStates(0);
+			cout << "Time of SetFullPackagesStates() " << (clock()-t)/1000.0 << endl;
+			t = clock();
 			Workflows[i]->PrintPackagesStates();
+			cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
 			Workflows[i]->PrintControls();
+			cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;
 		}
 	}
 	catch (const string msg){
@@ -458,171 +463,6 @@ void Model::SetForcedBricks(){
 }
 
 
-void Model::SetFullState(){
-	cout << "Generating states and controls..." << endl;
-	ofstream file("fullState.txt");
-	ofstream fileControl("fullControl.txt");
-	ofstream fileNext("fullNext.txt");
-	
-	int num = 0, realNum = 0, workflowsCount = 0, k = 10, allStateCount = 1, ucount = 0;
-	vector<int> coresPerResourceType;
-	workflowsCount = Workflows.size();
-	// number of cores per one resource type
-	for (int i = 0; i < Resources.size(); i++)
-		coresPerResourceType.push_back(Resources[i]->GetCoresCount());
-
-	State oneState;
-	// creating states for each workflow
-	for (int i = 0; i < workflowsCount; i++){
-		string name = "Workflow" + to_string(long long (i+1)) + ".txt";
-		//oneState = GetStates(name, 0, i);
-		// BIG PUSH BACK!!
-		States.push_back(oneState);
-		allStateCount *= oneState.size();
-	}
-	
-	
-	//cout << allStateCount << endl;
-
-	//vector <int> currentCounts;
-	//repeatCounts.push_back(1); currentCounts.push_back(0);
-	//
-	//for (int i = workflowsCount - 2; i >= 0; i--){
-	//	repeatCounts.push_back(repeatCounts.back() * States[i+1].size());
-	//	currentCounts.push_back(0);
-	//}
-	//reverse(repeatCounts.begin(), repeatCounts.end());
-	//vector <vector <int>> stateNumbers;
-	//vector <PackageState> fullState;
-	//
-	//int missing = 0; int prevCount = 0; 
-
-	//while (num < allStateCount){
-	//	//cout << num << endl;
-	//	vector <PackageState>::iterator ip;
-	//	
-	//	for (int i = 0; i < repeatCounts.size(); i++){
-	//		if (num >= repeatCounts[i] && (num % repeatCounts[i]==0)) {
-	//			currentCounts[i]++; 
-	//			if (currentCounts[i] > States[i].size() - 1) {
-	//				currentCounts[i]=0;
-	//				// beginning of repeating cycle
-	//				//beginRepeat[i]=realNum;
-	//			}
-	//		}
-	//	}
-	//	for (int i = 0; i < workflowsCount; i++)
-	//	{
-	//		int stateNum = currentCounts[i];
-	//		for (ip = States[i][stateNum].begin(); ip!=States[i][stateNum].end(); ip++)
-	//			fullState.push_back(*ip);
-	//	}
-	//	
-	//	
-	//	int flag = true;
-	//	for (int i = 0; i < Nodes.size(); i++)
-	//	{
-	//		// max value of cores
-	//		int max = freeCores[i];
-	//		int oneCoreCount = 0;
-	//		vector <PackageState>::iterator it3 = fullState.begin();
-	//		// for all packages states
-	//		for (it3; it3!=fullState.end(); it3++){
-	//			int oneNode = (*it3).get<1>();
-	//			if (oneNode == i+1) oneCoreCount +=(*it3).get<2>();
-	//			if (oneCoreCount > max) {
-	//				flag = false;
-	//				missing++;
-	//				break;
-	//			}
-	//		}
-	//		if (!flag) {
-	//			//if (missing==0) 
-	//			//prevCount = missing;
-	//		break;
-	//		}
-	//	}
-	//	if (flag == true) {
-	//		if (missing>0) {
-	//			if (diff.size()>0) diff.push_back(make_pair(num,diff.back().second+missing));
-	//			else diff.push_back(make_pair(num,missing));
-	//		}
-	//		missing = 0;
-	//		file << realNum << " ";
-	//		for (vector<PackageState>::iterator i = fullState.begin(); i!=fullState.end(); i++)
-	//			file << (*i) << " " ;
-	//		file << endl;
-	//		fileControl << "State " << realNum << endl;
-	//		FullState.push_back(fullState); 
-	//		PossibleControls controls = GetStateControls(realNum, fileControl);
-	//		//cout << controls.size() << endl;
-	//		ucount += controls.size();
-	//		FullControl.push_back(controls);
-	//		/*for (int i = 0; i < workflowsCount; i++){
-	//			int diff = currentCounts[i]-prevCount[i];
-	//			if (diff > 1){
-	//				RepeatChanges[i].insert(make_pair(beginRepeat[i],make_pair(currentCounts[i]-1, repeatCounts[i])));
-	//			}
-	//		}*/
-	//		//prevCount = currentCounts;
-	//		realNum++;
-	//	}
-	//	int percent = (float)num / (float)allStateCount * 100;
-	//	if (percent >= k) { cout << k << " % " << "...\n"; k+=10;}
-	//	
-	//	fullState.clear();
-	//	num ++;
-	//}
-	//
-
-	//cout << 100 << " % " << "...\n";
-	//k = 10;
-	//cout << "All possible states count is: " << FullState.size() << "." << endl;
-	//cout << "All possible controls count is: " << ucount << "." << endl;
-	//ofstream f("error.txt");
-	//for (int i = 0; i < diff.size(); i++)
-	//	f << diff[i].first << " " << diff[i].second << endl;
-	//float max_time = 0; int prevNum = 0;
-	////for (int i = 0; i < FullState.size(); i++){
-	////	vector <PackageState> state = FullState[i];
-	////	//for (int j = 0; j < state.size(); j++) cout << i << " " << state[j] << " ";
-	////	//cout << endl;
-	////	int s = GetStateNumber(state, i);
-	////	//f << s << endl;
-	////	//if (i!=s) {
-	////		cout<< s << " "<< i <<  endl;
-	////	//}
-	////	
-	////	//cout << "Time for getting state number " <<  i << " " << time  << " sec "<< endl;
-	////	//if (time > max_time) {max_time = time;  cout << i << " Max_time = " << max_time << endl;}
-	////}
-
-	//f.close();
-	//cout << "Generating next states for all combinations of states and controls...\n";
-	//int fSize = FullState.size(); 
-	//for (int i = 0; i < FullState.size(); i++){
-	//	fileNext << "State " << i << endl;
-	//	vector <int> v; PossibleControls controls = FullControl[i];
-	//	for (int j = 0 ; j < controls.size(); j++){
-	//		//cout << "Control " << j+1	<< " of " << controls.size()-1 << endl;
-	//		//double start = clock();
-	//		v.push_back(GetNextStateNumber(i, j, fileNext));
-	//		//float time = (clock() - start) / CLOCKS_PER_SEC;
-	//		//cout << "Time of executing " <<  time  << " sec "<< endl;
-	//		//if (time > max_time) {max_time = time;  cout << "Max_time = " << max_time << endl;}
-	//	}
-	//	FullNextState.insert(make_pair(i, v));
-	//	int percent = (float)i / (float)fSize * 100;
-	//	if (percent >= k) { cout << k << " % " << "...\n"; k+=10;}
-	//	
-	//}
-	//cout << 100 << " % " << "...\n";
-	file.close();
-	fileNext.close();
-	fileControl.close();
-}
-
-
 
 //void Model::CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls){
 //	vector <int> impossibleStateNumbers;
@@ -661,164 +501,7 @@ void Model::SetFullState(){
 //	}
 //}
 
-//PossibleControls Model::GetStateControls(int stateNumber, ofstream& file){
-//	vector <PackageState> &state = FullState[stateNumber];
-//	for (vector <PackageState>::iterator i5 = state.begin(); i5!= state.end(); i5++)
-//			file << (*i5) << " ";
-//			file << endl;
-//	PossibleControls fullPossibleControls;
-//	vector <OnePackageControl> OneControl;
-//	vector <PackageState>::iterator it = state.begin();
-//	vector <int> fc;
-//	for (int i = 0; i < freeCores.size(); i++) fc.push_back(freeCores[i]);
-//	// for each package in state
-//	for (; it!=state.end(); it++){
-//		PackageState pState = (*it);
-//		int pNum = (*it).get<0>();
-//		int node = (*it).get<1>();
-//		int cores = (*it).get<2>();
-//		int level = (*it).get<3>();
-//		// if package is executing
-//		if (node > 0) {
-//			OneControl.push_back(make_tuple(pNum, node,cores));
-//			//file << make_tuple(pNum, node,cores) << endl;
-//			fc[node-1]-=cores;
-//			if (fc[node-1] < 0) fc[node-1]=0;
-//			//file << "fc = "<< fc[node-1] << " endl";
-//		}
-//		// if package cannot execute
-//		if (level == -1 || level == 1){
-//			OneControl.push_back(make_tuple(pNum, 0,0));
-//			//file << make_tuple(pNum, 0,0) << endl;
-//		}
-//	
-//	}
-//	//file << "Possible packages controls " << endl;
-//	vector <vector <OnePackageControl>> possiblePackagesControl;
-//	// if package can execute
-//	int possibleControlsCount = 1;
-//	for (it = state.begin(); it!=state.end(); it++){
-//		/*for (vector <int>::iterator i = fc.begin(); i!= fc.end(); i++)
-//			file << "<" << *i << ">";
-//		file << endl;*/
-//		vector <OnePackageControl> onePackageControls;
-//		int pNum = (*it).get<0>();
-//		int node = (*it).get<1>();
-//		int cores = (*it).get<2>();
-//		float level = (*it).get<3>();
-//		if (level == 0)
-//		{
-//			vector <int> possibleNodes = Packages[pNum-1]->GetNodeNumbers();
-//			vector <int> possibleCores = Packages[pNum-1]->GetCoreCounts();
-//			for (int i = 0; i < possibleNodes.size(); i++)
-//			{
-//				int nodeNumber = possibleNodes[i]; // number of node
-//				for (int j = 0; j < possibleCores.size(); j++)
-//				{
-//					if (fc[nodeNumber-1] >= possibleCores[j])
-//					{
-//						onePackageControls.push_back(make_tuple(pNum, nodeNumber, possibleCores[j]));
-//						//file << make_tuple(pNum, nodeNumber, possibleCores[j]);
-//			
-//					} // if
-//				} // for
-//			} // for
-//			onePackageControls.push_back(make_tuple(pNum, 0, 0));
-//			/*cout << pNum << " : ";
-//			for (vector <OnePackageControl>::iterator it = onePackageControls.begin(); it!= onePackageControls.end(); it++)
-//				cout << *it << " ";
-//			cout << endl;*/
-//			possiblePackagesControl.push_back(onePackageControls);
-//			possibleControlsCount *= onePackageControls.size();
-//			//if (onePackageControls.size() == 1) possibleControlsCount++;
-//		}
-//	}
-//
-//	//vector<vector <OnePackageControl>> fullPossibleControls;
-//	// generating possible combinations of controlling
-//		
-//	vector <vector <OnePackageControl>>::iterator iP = possiblePackagesControl.begin();
-//	int repeatCount = 1, n = 1;
-//	for (;iP!=possiblePackagesControl.end();iP++){
-//		
-//		// for all possible controls
-//		int packageStateNumber = 0;
-//		for (int i = 0; i < possibleControlsCount; i++){
-//			// if it is the first package, we must create new vector 
-//			if (repeatCount == 1 && iP == possiblePackagesControl.begin() ){
-//				vector <OnePackageControl> newControl;
-//				newControl.push_back((*iP)[packageStateNumber++]);
-//				fullPossibleControls.push_back(newControl);
-//			}
-//			else{
-//				for (int j = 1; j <= repeatCount; j++)
-//				{
-//					fullPossibleControls[i++].push_back((*iP)[packageStateNumber]);
-//					if (packageStateNumber == (*iP).size()) packageStateNumber = 0;
-//				}
-//				packageStateNumber++;
-//				--i;
-//			}
-//			if (packageStateNumber == (*iP).size()) packageStateNumber = 0;	
-//			
-//		}
-//		repeatCount*=(*iP).size();
-//	}
-//	/*for (vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin(); it1!= fullPossibleControls.end(); it1++){
-//		 file << n << " : ";
-//		 for (vector <OnePackageControl>::iterator it2 = (*it1).begin(); it2!= (*it1).end(); it2++)
-//			file  << *it2 << " ";
-//			file << endl;
-//	}*/
-//	//cout << fullPossibleControls.size() << endl;
-//	CheckForIllegalCoreNumber(fullPossibleControls);
-//	//cout << fullPossibleControls.size() << endl;
-//
-//
-//	//file << "After eliminating: " << endl;
-//	//for (vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin(); it1!= fullPossibleControls.end(); it1++){
-//	//		vector <int> busyCores; for (int i = 0; i < Nodes.size();i++) busyCores.push_back(0); 
-//	//	 for (vector <OnePackageControl>::iterator it2 = (*it1).begin(); it2!= (*it1).end(); it2++){
-//	//		 int node = (*it2).get<1>();
-//	//		 int cores = (*it2).get<2>();
-//	//		 if (node != 0) busyCores[node-1] += cores; 
-//	//		 //file << *it2 << " ";
-//	//	 }
-//	//		//file << "busy cores " << busyCores[0] << " " <<busyCores[1] << endl;
-//	//		//file << endl;
-//	//}
-//	// gathering full pack of control for this state
-//		if (fullPossibleControls.size() == 0) fullPossibleControls.push_back(OneControl);
-//		else {
-//		for (vector <OnePackageControl>::iterator it = OneControl.begin(); it!= OneControl.end(); it++)
-//		for (int i = 0; i < fullPossibleControls.size(); i++){ 
-//				fullPossibleControls[i].push_back(*it);
-//			//cout << i << endl;
-//			}
-//		}
-//	
-//	// checking for illegal number of cores
-//	CheckForIllegalCoreNumber(fullPossibleControls);
-//	
-//	//file << "After gathering: " << endl;
-//	for (vector<vector <OnePackageControl>>::iterator it1 = fullPossibleControls.begin(); it1!= fullPossibleControls.end(); it1++){
-//		 //vector <int> busyCores; for (int i = 0; i < Nodes.size();i++) busyCores.push_back(0); 
-//		 sort((*it1).begin(),(*it1).end(), mycompare);
-//		 for (vector <OnePackageControl>::iterator it2 = (*it1).begin(); it2!= (*it1).end(); it2++){
-//			
-//			int node  = (*it2).get<1>();
-//			int cores = (*it2).get<2>();
-//			//if (node!=0) busyCores[node-1] += cores;
-//			
-//			file << *it2 << " ";
-//			
-//		 }
-//			//file << " busy cores " << busyCores[0] << " " <<busyCores[1] << endl;
-//		file << endl;
-//	}
-//	
-//	return fullPossibleControls;
-//}
+
 
 //void Model::DirectBellman(){
 //	cout << "Result: " << endl;

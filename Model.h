@@ -5,14 +5,8 @@
 #include "ResourceType.h"
 
 
-typedef tuple <int,int,int> OnePackageControl; // (number of package, number of node, core count)
-typedef vector <OnePackageControl> OneControl; // (number of package1, number of node, core count), ..., (number of packageN, number of node, core count)
-typedef vector <OneControl> PossibleControls;
-typedef vector <PossibleControls> Control;
-typedef tuple <int,int,int,float> PackageState;
-typedef vector <vector <PackageState>> State;
-typedef map <int, vector <int>> NextStates;
-typedef tuple <int, vector <int>, float> StateInformation; // (number of state, vector of uopts, max efficiency)
+
+typedef vector <int, float> StateInformation; // (number of uopt, max eff on this state)
 typedef vector <StateInformation> StageInformation;
 typedef vector <StageInformation> BackBellmanInfo;
 typedef multimap<int, pair<int,int> > WorkflowRepeatChanges; // (number of fullstate,number of state, repeatCountDecrement)
@@ -64,15 +58,11 @@ public:
 	void CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls);
 	PossibleControls GetStateControls(int stateNumber, ofstream& file);
 	void GetOneStageControls(int tbegin);
-	State GetStates(string filename, int initPackage, int wfNum);
 	void OneStep(int periodNumber);
 	vector <int> GetUOptsByStateNumber(int stateNum, int tbegin, ofstream &file, float & ef); //returns vector <number of uopts>
 	int GetBusyCores(OneControl& control);
-	int GetNextStateNumber(int stateNum, int uOptNum, ofstream & file);
 	int GetStateNumber(vector <PackageState> &resultState, int stateNum);
-	void SetFullState();
-	void GetFullState(char * fname);
-	bool CheckState (int stateNumber);
+		bool CheckState (int stateNumber);
 	void DirectBellman();
 	float GetEfficiency(OneControl& control, int, int);
 	PossibleControls CheckControls(int i, int);
