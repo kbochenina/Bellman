@@ -13,7 +13,6 @@ Workflow::Workflow (std::vector <Package*> p, std::vector <std::vector <int>> c,
 	wfNum = w;
 	maxPossibleTime = 120.0 * 1000;
 	elapsedTime = 0.0;
-	
 	// find count of zero rows
 	int zeroCount = 0;
 	for (int i = 0; i < packages.size(); i++){
@@ -46,7 +45,13 @@ void Workflow::SetIsPackageInit(){
 }
 
 void Workflow::SetFullPackagesStates(int currentPackage){
-	if (currentPackage == 0) beginTime = clock(), prevBeginTime = beginTime;
+	ofstream tf;
+	float fctime = 0;
+	if (currentPackage == 0) {
+		beginTime = clock(), prevBeginTime = beginTime;
+		string tfname = "wf" + to_string((long long)wfNum) + "_time.txt";
+		tf.open(tfname);
+	}
 	// if it is the last package
 	try{
 		string errWrongPackageNumber = "SetFullPackagesStates(): workflow " + to_string((long long)wfNum) 
@@ -78,7 +83,11 @@ void Workflow::SetFullPackagesStates(int currentPackage){
 							newState[k] = packagesStates[j][k-1];
 						newStates.push_back(newState);
 						if (currentPackage == 0){
+							int ct = clock();
 							GetControls(newState, 0); 
+							tf << "Time of getting controls " << (clock()-ct)/1000.0 << endl;
+							fctime+=(clock()-ct)/1000.0;
+							tf << "oneStateControls.size() " << oneStateControls.size() << endl;
 							controls.push_back(oneStateControls);
 						}
 					}
@@ -88,7 +97,14 @@ void Workflow::SetFullPackagesStates(int currentPackage){
 			}
 			
 			packagesStates = newStates;
-			if (currentPackage == 0) SetNextStateNumbers();
+			if (currentPackage == 0) {
+				tf << "Full time of getting controls " << fctime << endl;
+				
+				int ct = clock();
+				SetNextStateNumbers();
+				tf << "Time of setting next state numbers " << (clock()-ct)/1000.0 << endl;
+				tf.close();
+			}
 		}
 	}
 	catch(const string msg){
@@ -104,8 +120,10 @@ void Workflow::SetNextStateNumbers(){
 	for (int i = 0; i < nextPackageStateNumbers.size(); i++){
 		vector <int> readyNumbers;
 		for (int j = 0; j < nextPackageStateNumbers[i].size(); j++){
+			vector<vector<int>>::iterator it = find(packagesStates.begin()+i, packagesStates.end(), nextPackageStateNumbers[i][j]);
 			// find next state number
-			for (int stateIndex = i; stateIndex < packagesStates.size(); stateIndex++){
+			readyNumbers.push_back(distance(packagesStates.begin(),it));
+			/*for (int stateIndex = i; stateIndex < packagesStates.size(); stateIndex++){
 				bool flag = true;
 				for (int k = 0; k < nextPackageStateNumbers[i][j].size(); k++){
 					if (nextPackageStateNumbers[i][j][k] != packagesStates[stateIndex][k]) {
@@ -115,7 +133,7 @@ void Workflow::SetNextStateNumbers(){
 				if (flag) { 
 					readyNumbers.push_back(stateIndex); break;
 				}
-			}
+			}*/
 		}
 		nextStateNumbers.push_back(readyNumbers);
 	}
