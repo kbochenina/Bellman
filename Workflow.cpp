@@ -444,3 +444,7 @@ void Workflow::SetTimesCoresForControl(const vector<int>&state, const vector<int
 		controlIndex++;
 	}
 }
+
+double Workflow::GetLevel(int pNum, int state){
+	return packages[pNum]->GetLevel(state);
+}
