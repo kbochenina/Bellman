@@ -11,21 +11,21 @@ bool SortPair(const std::pair <int, int> &p1, const std::pair <int, int> &p2)
 	return p1.second > p2.second;
 }
 
-void ResourceType::CorrectBusyIntervals(vector <int> &const  stageBorders){
-	for (int i = 0; i < resources.size(); i++)
+void ResourceType::CorrectBusyIntervals(const vector <int> &  stageBorders){
+	for (unsigned int i = 0; i < resources.size(); i++)
 		resources[i].CorrectBusyIntervals(stageBorders);
 }
 
 int ResourceType::GetCoresCount(){
 	int coresCount = 0;
-	for (int i = 0; i < resources.size(); i++)
+	for (unsigned int i = 0; i < resources.size(); i++)
 		coresCount += resources[i].GetCoresCount();
 	return coresCount;
 }
 
 bool ResourceType::IsPossible(int execTime, int stage, int numCores){
 	vector <int> nearestBorders;
-	for (int i = 0; i < resources.size(); i++){
+	for (unsigned int i = 0; i < resources.size(); i++){
 		int near = resources[i].GetNearestBorder(numCores, stage);
 		if (near!= 0) nearestBorders.push_back(near);
 	}
@@ -38,7 +38,7 @@ bool ResourceType::IsPossible(int execTime, int stage, int numCores){
 
 std::vector<int> ResourceType::GetForcedNumbers(const int &execTime, const int &stageBegin, int numCores){
 	vector <int> forcedNumbers;
-	for (int i = 0; i < resources.size(); i++){
+	for (unsigned int i = 0; i < resources.size(); i++){
 		int near = resources[i].GetNearestBorder(numCores, stageBegin);
 		if (near!=T){
 			if (near== 0 || near < stageBegin + execTime) forcedNumbers.push_back(i);
@@ -88,7 +88,7 @@ int ResourceType::GetFinalStage(const std::vector<int> &execTimes, const std::ve
 	
 	vector<vector<int>> unsortedBestCores;
 
-	for (int i = 0; i < length.size(); i++){
+	for (unsigned int i = 0; i < length.size(); i++){
 		int currentPackageNum = length[i].first;
 		int currentCoresNum = numCores[currentPackageNum];
 		int execTime = execTimes[currentPackageNum], stagesCount = 0;
@@ -129,7 +129,7 @@ int ResourceType::GetFinalStage(const std::vector<int> &execTimes, const std::ve
 			oneResAddFBricks.push_back(control[i]);
 		resources[bestResource].AddForcedBricks(oneResAddFBricks);
 
-		for (int i = 0; i < bestCores.size(); i++) bestCores[i]+=bestResource*numCoresPerOneRes;
+		for (unsigned int i = 0; i < bestCores.size(); i++) bestCores[i]+=bestResource*numCoresPerOneRes;
 
 		unsortedBestCores.push_back(bestCores);
 		//for (int j = 0; j < bestCores.size(); j++) forcedCores[bestResource].push_back(bestCores[i]);
@@ -144,7 +144,7 @@ int ResourceType::GetFinalStage(const std::vector<int> &execTimes, const std::ve
 			nextStage[i*numCoresPerOneRes + j] = oneResStage[j]; 
 	}
 
-	for (int i = 0; i < length.size(); i++)
+	for (unsigned int i = 0; i < length.size(); i++)
 		coreNumbers[length[i].first] = unsortedBestCores[i];
 
 	for (int i = 0; i < numResources; i++) resources[i].SetForcedBricks();
@@ -159,16 +159,16 @@ void ResourceType::SetFreeTimeEnds(){
 	resourceFreeTimes.resize(T/delta);
 	allCoresFreeTimes.resize(T/delta);
 	for (int i = 0; i < T/delta; i++) resourceFreeTimes[i].resize(numCoresPerOneRes);
-	for (int i = 0; i < resources.size(); i++){
+	for (unsigned int i = 0; i < resources.size(); i++){
 		resources[i].GetFreeTime(resourceFreeTimes);
-		for (int j = 0; j < resourceFreeTimes.size(); j++)
+		for  (unsigned int j = 0; j < resourceFreeTimes.size(); j++)
 			copy(resourceFreeTimes[j].begin(), resourceFreeTimes[j].end(), back_inserter(allCoresFreeTimes[j]));
 	}
 }
 
 // check!!!
 void ResourceType::SetFreeTimeEnds(const vector <int>&addForcedBricks){
-	for (int i = 0; i < addForcedBricks.size(); i++){
+	for (unsigned int i = 0; i < addForcedBricks.size(); i++){
 		int forcedBrick = addForcedBricks[i];
 		int rowNum = (forcedBrick-1)% (T/delta);
 		int columnNum = (forcedBrick-1) / (T/delta);
@@ -177,30 +177,50 @@ void ResourceType::SetFreeTimeEnds(const vector <int>&addForcedBricks){
 
 }
 
+int ResourceType::GetNearestBorderForOneCore(const unsigned int &core, const unsigned int &stage){
+	if (allCoresFreeTimes[stage][core]==0) return 0;
+	int currentStage = stage;
+	while (currentStage < stages-1 && allCoresFreeTimes[currentStage][core] == delta) currentStage++;
+	return currentStage*delta + allCoresFreeTimes[currentStage][core];
+}
 
-bool ResourceType::Check(std::vector <std::pair<int,int>>& vec, int stage){
+bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources){
 	vector <int> usedNums;
-	vector <int> coreTimes = allCoresFreeTimes[stage];
-	for (int i = 0; i < vec.size(); i++){
-		int coreNum = vec[i].first;
-		int time = vec[i].second;
+	vector <int>& coreTimes = allCoresFreeTimes[stage];
+	vector <int> nearestBorders;
+	for (int i = 0; i < GetCoresCount(); i++) nearestBorders.push_back(GetNearestBorderForOneCore(i,stage));
+	// for each packages
+	for (unsigned int i = 0; i < timeCores.size(); i++){
+		double time = timeCores[i].first;
+		int coreNum = timeCores[i].second;
 		int coresViewed = 0, numberAdopted = 0;
-		for (int j = 0; j < coreTimes.size(); j++){
-			for (int k = 0; k < coreNum; k++){
-				if (coreTimes[j]>=time){
-					numberAdopted++;
-					coresViewed++;
-					usedNums.push_back(j);
+		for (int k = 0; k < coreNum; k++){
+			for (unsigned int j = 0; j < coreTimes.size(); j++){
+				// if this core is avaliable
+				if (nearestBorders[j]!=0){
+					// if the core has not been used previously
+					if (find (usedNums.begin(), usedNums.end(), j) == usedNums.end()){
+						// if we have enough time on this core or nearestBorder is equal to T
+						if (nearestBorders[j]-stage*delta >= time || nearestBorders[j] == T){
+							numberAdopted++;
+							coresViewed++;
+							usedNums.push_back(j);
+						}
+						if (canExecuteOnDiffResources==false){
+							if (coresViewed==numCoresPerOneRes-1) {
+								coresViewed = 0;
+								if (numberAdopted!=coreNum) numberAdopted = 0;
+							}
+						}
+					}
 				}
-				if (coresViewed==numCoresPerOneRes-1) {
-					coresViewed = 0;
-					if (numberAdopted!=coreNum) numberAdopted = 0;
-				}
+				if (numberAdopted==coreNum) break;
 			}
-			if (numberAdopted==coreNum) break;
 		}
 		if (numberAdopted!=coreNum) return false;
-		for (int j = 0; j < usedNums.size(); j++) coreTimes[usedNums[j]]=0;
+		// for (unsigned int j = 0; j < usedNums.size(); j++) coreTimes[usedNums[j]]=0;
 	}
+	
 	return true;
 }
+

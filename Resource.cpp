@@ -48,7 +48,8 @@ private:
 
 void Resource::SetForcedBricks(){
 	int shift = T/delta - 1;
-	for (int i = 0; i < forcedBricks.size(); i++) forcedBricks[i]=0;
+	for (unsigned int i = 0; i < forcedBricks.size(); i++) 
+		forcedBricks[i]=0;
 	for (int i = 0; i < coresCount; i++){
 		vector <pair<int,int>>::iterator diap = busyIntervals[i+1].begin();
 		for (; diap!= busyIntervals[i+1].end(); diap++){
@@ -73,7 +74,7 @@ void Resource::AddForcedBricks(const vector<unsigned int>& add){
 		if (add.size()!= forcedBricks.size())
 			throw "AddForcedBricks error";
 		vector <unsigned int> victim; 
-		for (int i = 0; i < coresCount; i++){
+		for (unsigned int i = 0; i < coresCount; i++){
 			victim.push_back(add[i]);
 			forcedBricks[i]|=add[i];
 			int currentBit = 0;
@@ -89,7 +90,7 @@ void Resource::AddForcedBricks(const vector<unsigned int>& add){
 			}
 			if (diapNumbers.size()!=0){
 				int currentDiapBegin = diapNumbers[0], currentDiapEnd = currentDiapBegin;
-				for (int j = 1; j < diapNumbers.size(); j++){
+				for (unsigned int j = 1; j < diapNumbers.size(); j++){
 					if (diapNumbers[j] == currentDiapEnd + 1){
 						currentDiapEnd = diapNumbers[j];
 					}
@@ -127,12 +128,12 @@ Resource::Resource(int n,int c, map <int,vector<pair<int,int>>> b)
 	coresCount = c;
 	busyIntervals = b;
 	currentBusyIntervals = busyIntervals;
-	for (int i = 0; i < coresCount; i++) forcedBricks.push_back(0);
+	for (unsigned int i = 0; i < coresCount; i++) forcedBricks.push_back(0);
 }
 
 
 
-void Resource::CorrectBusyIntervals(std::vector<int>& const vec){
+void Resource::CorrectBusyIntervals(const std::vector<int>&  vec){
 	
 	for (iInterval it = busyIntervals.begin(); it!= busyIntervals.end(); it++){
 		vector <int> toEraseNums;
@@ -143,13 +144,13 @@ void Resource::CorrectBusyIntervals(std::vector<int>& const vec){
 				toEraseNums.push_back(distance(it->second.begin(), it2-1));
 			}
 			int bEnd = it2->second;
-			for (int i = 0; i < vec.size()-1; i++) {
+			for (unsigned int i = 0; i < vec.size()-1; i++) {
 				if (vec[i] < bEnd && vec[i+1] > bEnd) {
 					newVal = it2->second = vec[i+1];
 				}
 			}
 		}
-		for (int i = 0; i < toEraseNums.size(); i++){
+		for (unsigned int i = 0; i < toEraseNums.size(); i++){
 			it->second.erase(it->second.begin()+toEraseNums[i]);
 		}
 	}
@@ -172,7 +173,7 @@ std::vector <int>* Resource::GetForcedNumbers(){
 		for (vector<pair<int,int>>::iterator it2 = it->second.begin(); it2!=it->second.end(); it2++){
 		int bBegin = it2->first;
 		int bEnd = it2->second;
-		for (int i = 0; i < stageBorders.size(); i++) {
+		for (unsigned int i = 0; i < stageBorders.size(); i++) {
 			if (stageBorders[i] <= bBegin && bBegin - stageBorders[i]<= delta) {
 				int index = 0, length = 0;
 				if (stageBorders[i]== bBegin) {
@@ -193,7 +194,7 @@ std::vector <int>* Resource::GetForcedNumbers(){
 	return forcedNumbers;
 }
 
-int Resource::GetNearestBorder(int coreNum, int stageBegin){
+int Resource::GetNearestBorder(unsigned int coreNum, int stageBegin){
 	vector<int> nearestBorders;
 	for (iInterval it = busyIntervals.begin(); it!=busyIntervals.end(); it++){
 		if (it->second.size()==0) nearestBorders.push_back(T);
@@ -214,8 +215,8 @@ int Resource::GetNearestBorder(int coreNum, int stageBegin){
 // ((core1 freeTime, core2 FreeTime), (core 1 freeTime, core2 FreeTime)) - stage 
 void Resource::GetFreeTime(std::vector <std::vector<int>> & vec){
 	try{
-		if (vec.size() < T/delta) throw "Resource::GetFreeTime() - vector has not enough stages";
-		for (int i = 0; i < vec.size(); i++)
+		if (vec.size() < (unsigned int)T/delta) throw "Resource::GetFreeTime() - vector has not enough stages";
+		for (unsigned int i = 0; i < vec.size(); i++)
 			if (vec[i].size() < coresCount) throw "Resource::GetFreeTime() - vector has not enough core counts";
 	}
 	catch (const string msg){
@@ -229,6 +230,7 @@ void Resource::GetFreeTime(std::vector <std::vector<int>> & vec){
 		if (it->second.size()==0) {
 			for (int i = 0; i < T; i+=delta)
 				vec[i/delta][resourceIndex] = delta;
+			resourceIndex++;
 			continue;
 		}
 		vector <pair<int, int>> intervals = it->second;
@@ -276,7 +278,7 @@ std::vector <unsigned int> Resource::GetNextStage(const std::vector<unsigned int
 		if (control.size()!= forcedBricks.size())
 			throw "Resource::GetNextStage() error";
 		vector <unsigned int> victim = forcedBricks;
-		for (int i = 0; i < victim.size(); i++){
+		for (unsigned int i = 0; i < victim.size(); i++){
 			victim[i] |= control[i];
 		}
 		return victim;
@@ -288,10 +290,10 @@ std::vector <unsigned int> Resource::GetNextStage(const std::vector<unsigned int
 	}
 }
 
-int Resource::GetPlacement(const int& tBegin, const int& execTime, const int& numCores, vector<int>&realCoreNums){
+int Resource::GetPlacement(const int& tBegin, const int& execTime, const unsigned int& numCores, vector<int>&realCoreNums){
 	if (numCores > coresCount) return -1;
 	vector <pair<int,int>> coresAvaliableTimes, uncompletedTimes;
-	for (int i = 0; i < coresCount; i++) {
+	for (unsigned int i = 0; i < coresCount; i++) {
 		vector<pair<int,int>>::iterator it = find_if(currentBusyIntervals[i+1].begin(), currentBusyIntervals[i+1].end(), isIn(tBegin));
 		if (it==currentBusyIntervals[i+1].end()){
 			int nearestBorder = GetCoreNearestBorder(i,tBegin);
@@ -310,7 +312,7 @@ int Resource::GetPlacement(const int& tBegin, const int& execTime, const int& nu
 	
 	int distance = 0;
 	
-	for (int i = 0; i < numCores;i++){
+	for (unsigned int i = 0; i < numCores;i++){
 		if (i < coresAvaliableTimes.size()){
 			realCoreNums[i] = coresAvaliableTimes[i].first;
 			distance += coresAvaliableTimes[i].second - execTime;
