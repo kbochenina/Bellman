@@ -20,6 +20,7 @@ class Model
 	// fields
 	vector <Workflow*> Workflows;
 	std::vector <ResourceType*> Resources;
+	vector <tuple<int,int,vector<int>>> stagesCores; // (package,stage, core1, core2,...) for package1, (stage, core1, core2, ...) for package 2...
 	std::vector <int> forcedBricks;
 	bool canExecuteOnDiffResources; // if true one package can execute on some cores of different resources of one type
 	double koeff;
@@ -37,7 +38,7 @@ class Model
 	void InitWorkflows(string);
 	void InitSettings(string);
 	bool CheckState (const unsigned int state, const unsigned int stage,timeCore&);
-	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&);
+	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, vector <vector<int>>&fullUsedNums, bool isUsedNumsNeeded);
 	void SetForcedBricks();
 	double efficiencyFunction(double x) { return (koeff*(1-x)); }
 	double EfficiencyByPeriod(int busyCores, int t1, int t2){

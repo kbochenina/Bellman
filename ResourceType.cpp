@@ -184,13 +184,15 @@ int ResourceType::GetNearestBorderForOneCore(const unsigned int &core, const uns
 	return currentStage*delta + allCoresFreeTimes[currentStage][core];
 }
 
-bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources){
+bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources, 
+	vector <vector<int>>&fullUsedNums, bool isUsedNumsNeeded){
 	vector <int> usedNums;
 	vector <int>& coreTimes = allCoresFreeTimes[stage];
 	vector <int> nearestBorders;
 	for (int i = 0; i < GetCoresCount(); i++) nearestBorders.push_back(GetNearestBorderForOneCore(i,stage));
 	// for each packages
 	for (unsigned int i = 0; i < timeCores.size(); i++){
+		vector <int> usedNumsForOnePackage;
 		double time = timeCores[i].first;
 		int coreNum = timeCores[i].second;
 		int coresViewed = 0, numberAdopted = 0;
@@ -205,6 +207,7 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 							numberAdopted++;
 							coresViewed++;
 							usedNums.push_back(j);
+							usedNumsForOnePackage.push_back(j);
 						}
 						if (canExecuteOnDiffResources==false){
 							if (coresViewed==numCoresPerOneRes-1) {
@@ -218,6 +221,10 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 			}
 		}
 		if (numberAdopted!=coreNum) return false;
+		if (isUsedNumsNeeded) {
+			fullUsedNums.push_back(usedNumsForOnePackage);
+		}
+		
 		// for (unsigned int j = 0; j < usedNums.size(); j++) coreTimes[usedNums[j]]=0;
 	}
 	

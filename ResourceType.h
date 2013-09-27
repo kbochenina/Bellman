@@ -22,7 +22,8 @@ public:
 	~ResourceType(void);
 	int GetResourceCount(){return resources.size();}
 	Resource& operator[](const int index){return resources[index];}
-	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources);
+	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources, 
+		vector <vector<int>>&usedNums, bool isUsedNumsNeeded);
 	void SetInitLastVals(unsigned short i, unsigned short l) {initVal = i; lastVal = l;}
 	unsigned short GetInitVal(){return initVal;}
 	void SetFreeTimeEnds(); // if we want to set default free time ends;

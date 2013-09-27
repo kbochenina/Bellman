@@ -505,16 +505,39 @@ void Model::SetForcedBricks(){
 
 
 void Model::DirectBellman(){
-	ofstream f("result.txt");
-	int currentNum = 0;
-	double maxEff = FullInfo[0][0].second;
-	for (int i = 0; i < stages; i++){
-		int uopt = FullInfo[i][currentNum].first;
-		Workflows[0]->PrintState(states[currentNum], f);
-		Workflows[0]->PrintControl(controls[currentNum][uopt], f);
-		currentNum = nextStateNumbers[currentNum][uopt];
+	try{
+		ofstream f("result.txt");
+		int currentNum = 0;
+		double maxEff = FullInfo[0][0].second;
+		for (int i = 0; i < stages; i++){
+			vector <vector<int>> fullUsedNums;
+			timeCore timeCores;
+			timeCores.resize(Resources.size());
+			int uopt = FullInfo[i][currentNum].first;
+			Workflows[0]->PrintState(states[currentNum], f);
+			Workflows[0]->PrintControl(controls[currentNum][uopt], f);
+			CheckControl(currentNum,uopt,i,timeCores, fullUsedNums, true);
+			int fullUsedNumIndex = 0;
+			string errMsgIndex = "Wrong fullUsedNumIndex value",
+				errMsgSize = "Wrong fullUsedNums size()";
+			for (int j = 0; j < controls[currentNum][uopt].size(); j++){
+				if (controls[currentNum][uopt][j] != -1 
+					&& Workflows[0]->GetLevel(j,states[currentNum][j])==0){
+					if (fullUsedNumIndex > fullUsedNums.size()-1) throw errMsg;
+					if (fullUsedNums.size()==0) throw errMsgSize;
+					stagesCores.push_back(make_tuple(j,i,fullUsedNums[fullUsedNumIndex]));
+					fullUsedNumIndex++;
+				}
+			}
+			currentNum = nextStateNumbers[currentNum][uopt];
+		}
+		f.close();
 	}
-	f.close();
+	catch (const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 
@@ -534,13 +557,15 @@ void Model::GetStageInformation(int stage){
 		int uopt = 0;
 		double maxEff = 0.0; 
 		vector<vector<pair<double, unsigned int>>> timeCoresPerType;
+		timeCoresPerType.resize(Resources.size());
+		vector<vector<int>> fullUsedNums;
 		// if we have right core number for this state
 		if (CheckState(i, stage, timeCoresPerType)) {
 			vector<vector<int>>::const_iterator controlsIt = controls[i].begin();
 			int controlIndex = 0;
 			for (; controlsIt!=controls[i].end(); controlsIt++){
 				timeCore currentTimeCore = timeCoresPerType;
-				if (CheckControl(i, controlIndex, stage, currentTimeCore)){
+				if (CheckControl(i, controlIndex, stage, currentTimeCore, fullUsedNums,false)){
 					// if it is the last period
 					double currEff = GetEfficiency(stage, currentTimeCore);
 					if (stage == stages-1){
@@ -589,17 +614,28 @@ double Model::GetEfficiency(const int & stage, const timeCore& currentTC){
 }
 
 bool Model::CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage,
-	timeCore& timeCoresPerType){
+	timeCore& timeCoresPerType, vector <vector<int>>&fullUsedNums, bool isUsedNumsNeeded){
 	try {
 		string errMsg = "timeCoresPerType has wrong size";
 		if (timeCoresPerType.size()!=Resources.size()) throw errMsg;
 		Workflows[0]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType);
 		vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 		unsigned int typeIndex = 0;
+		unsigned int inc = 0;
 		for (;tCit != timeCoresPerType.end(); tCit++){
+			vector <vector<int>> usedNums; 
 			if (tCit->size()!=0){
-				if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources)==false) 
+				if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources,
+					usedNums, isUsedNumsNeeded)==false) 
 					return false;
+			}
+			if (isUsedNumsNeeded){
+				for (vector<vector<int>>::iterator packIt = usedNums.begin(); packIt!= usedNums.end(); packIt++){
+					for (vector<int>::iterator coreIt = packIt->begin(); coreIt!=packIt->end(); coreIt++)
+						*coreIt += inc;
+				}
+				inc += Resources[typeIndex]->GetCoresCount();
+				copy(usedNums.begin(),usedNums.end(), back_inserter(fullUsedNums));
 			}
 			typeIndex++;	
 		}
@@ -613,13 +649,13 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 }
 
 bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType){
-	timeCoresPerType.resize(Resources.size());
+	vector <vector<int>> fullUsedNums;
 	Workflows[0]->SetTimesCoresForState(states[state], timeCoresPerType);
 	vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 	unsigned int typeIndex = 0;
 	for (;tCit != timeCoresPerType.end(); tCit++){
 		if (tCit->size()!=0){
-			if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources)==false) 
+			if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources, fullUsedNums, false)==false) 
 				return false;
 		}
 		typeIndex++;	
