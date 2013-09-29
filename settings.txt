@@ -1,1 +1,6 @@
 canExecuteOnDiffResources=1
+InputFolderPath="InputFiles"
+DebugInfoFile="defaultExperRes.txt"
+ResultFile="result.txt"
+T=43200
+delta=3600

@@ -4,23 +4,16 @@
 
 
 
-//bool mycompare (const OnePackageControl &lhs, const OnePackageControl &rhs){
-//	return get<0>(lhs) < get<0>(rhs);
-//}
-//
-//bool packageStateOrder (const PackageState &lhs, const PackageState &rhs){
-//	return get<0>(lhs) < get<0>(rhs);
-//}
-
 bool SortPairs(pair <int, double> p1, pair <int,double> p2){
 	return (p1.second > p2.second);
 }
 
-void Model::Init (string resFile, string wfFile, string settingsFile){
+void Model::Init (string resFile, string wfFile, string settingsFile, string xmlFile){
 	InitResources(resFile); cout << "Initialization of resources ended" << endl;
 	FullInfo.resize(stages);
 	InitWorkflows(wfFile); 
 	InitSettings(settingsFile);
+	xmlBaseName = xmlFile;
 }
 
 void Model::InitSettings(string settingsFile){
@@ -297,10 +290,10 @@ void Model::InitWorkflows(string f){
 				FullInfo[j].resize(states.size());
 			cout << "Time of SetFullPackagesStates() " << (clock()-t)/1000.0 << endl;
 			t = clock();
-			Workflows[i]->PrintPackagesStates(states);
+			/*Workflows[i]->PrintPackagesStates(states);
 			cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
 			Workflows[i]->PrintControls(states,controls, nextStateNumbers);
-			cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;
+			cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;*/
 		}
 	}
 	catch (const string msg){
@@ -500,37 +493,34 @@ void Model::SetForcedBricks(){
 	}
 }
 
-
-
-
-
 void Model::DirectBellman(){
 	try{
 		ofstream f("result.txt");
 		int currentNum = 0;
 		double maxEff = FullInfo[0][0].second;
 		for (int i = 0; i < stages; i++){
-			vector <vector<int>> fullUsedNums;
+			vector<vector<int>> stageUsedNums;
 			timeCore timeCores;
 			timeCores.resize(Resources.size());
 			int uopt = FullInfo[i][currentNum].first;
 			Workflows[0]->PrintState(states[currentNum], f);
 			Workflows[0]->PrintControl(controls[currentNum][uopt], f);
-			CheckControl(currentNum,uopt,i,timeCores, fullUsedNums, true);
+			CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums);
 			int fullUsedNumIndex = 0;
 			string errMsgIndex = "Wrong fullUsedNumIndex value",
 				errMsgSize = "Wrong fullUsedNums size()";
 			for (int j = 0; j < controls[currentNum][uopt].size(); j++){
 				if (controls[currentNum][uopt][j] != -1 
 					&& Workflows[0]->GetLevel(j,states[currentNum][j])==0){
-					if (fullUsedNumIndex > fullUsedNums.size()-1) throw errMsg;
-					if (fullUsedNums.size()==0) throw errMsgSize;
-					stagesCores.push_back(make_tuple(j,i,fullUsedNums[fullUsedNumIndex]));
+					if (fullUsedNumIndex > stageUsedNums.size()-1) throw errMsgIndex;
+					if (stageUsedNums.size()==0) throw errMsgSize;
+					stagesCores.push_back(make_tuple(j,i,stageUsedNums[fullUsedNumIndex]));
 					fullUsedNumIndex++;
 				}
 			}
 			currentNum = nextStateNumbers[currentNum][uopt];
 		}
+		BellmanToXML();
 		f.close();
 	}
 	catch (const string msg){
@@ -540,7 +530,108 @@ void Model::DirectBellman(){
 	}
 }
 
+void Model::BellmanToXML(){
+	string name = xmlBaseName + "_DP.jed";
+	ofstream f(name);
+	MetaXMLInfo(f);
+	f << "\t<node_infos>\n";
+	BusyToXML(f);
+	StagesCoresToXML(f);
+	f << "\t</node_infos>\n";
+	f << "</grid_schedule>\n";
+	f.close();
+}
 
+void Model::StagesCoresToXML(ofstream&f){
+	for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < stagesCores.size(); i++){
+		int packageNum = stagesCores[i].get<0>();
+		int tBegin = stagesCores[i].get<1>() * delta;
+		int coresCount = stagesCores[i].get<2>().size();
+		vector <int> cores = stagesCores[i].get<2>();
+		int type = -1;
+		int currBeginIndex = 0;
+		for (int j = 0; j < Resources.size(); j++){
+			if (cores[0] >= currBeginIndex && cores[0] <= currBeginIndex + Resources[j]->GetCoresCount()){
+				type = j + 1;
+				break;
+			}
+			currBeginIndex += Resources[j]->GetCoresCount();
+		}
+		double execTime = Workflows[0]->GetExecTime(packageNum,type,coresCount);
+		int tEnd = tBegin + execTime;
+		for (int j = 0; j < cores.size(); j++){
+			f << "\t\t<node_statistics>" << endl;
+			f << "\t\t	<node_property name=\"id\" value=\""<< packageNum+1 <<"\"/>" << endl;
+			f << "\t\t	<node_property name=\"type\" value=\"computation\"/>" << endl;
+			f << "\t\t	<node_property name=\"start_time\" value=\"" << tBegin << "\"/>" << endl;
+			f << "\t\t	<node_property name=\"end_time\" value=\"" << tEnd << "\"/>" << endl;
+			f << "\t\t	<configuration>" << endl;
+			f << "\t\t	  <conf_property name=\"cluster_id\" value=\"0\"/>" << endl;
+			f << "\t\t	  <conf_property name=\"host_nb\" value=\"1\"/>" << endl;
+			f << "\t\t	  <host_lists>" << endl;
+			f << "\t\t	    <hosts start=\"" << cores[j] << "\" nb=\"1\"/>" << endl;
+			f << "\t\t	  </host_lists>" << endl;
+			f << "\t\t	</configuration>" << endl;
+			f << "\t\t</node_statistics>" << endl;
+		}
+	}
+}
+
+void Model::MetaXMLInfo(ofstream &f){
+	int hosts = 0;
+	for (vector<Resource*>::size_type i = 0; i < Resources.size(); i++)
+		hosts += Resources[i]->GetCoresCount();
+
+	f << "<grid_schedule>\n";
+	f << "\t<meta_info>\n";
+	f << "\t\t<meta name=\"alloc\" value=\"mcpa\"/>\n";
+	f << "\t\t<meta name=\"pack\" value=\"0\"/>\n";
+	f << "\t\t<meta name=\"bf\" value=\"0\"/>\n";
+	f << "\t\t<meta name=\"ialloc\" value=\"0\"/>\n";
+	f << "\t</meta_info>\n";
+	f << "\t<grid_info>\n";
+	f << "\t\t<info name=\"nb_clusters\" value=\"1\"/>\n";
+	f << "\t\t<clusters>\n";
+	f << "\t\t  <cluster id=\"0\" hosts=\"" << hosts << "\" first_host=\"0\"/>\n";
+	f << "\t\t</clusters>\n";
+	f << "\t</grid_info>\n";
+}
+
+void Model::BusyToXML(ofstream &f){
+	int inc = 0;
+	
+	for (vector<ResourceType*>::size_type i = 0; i < Resources.size(); i++){
+		for (unsigned int j = 0; j < Resources[i]->GetResourceCount(); j++){
+			ResourceType *rt = Resources[i];
+			Resource r = (*rt)[j];
+			map <int,vector<pair<int,int>>> * bI = r.GetBusyIntervals();
+			map <int,vector<pair<int,int>>>::iterator bIt = bI->begin();
+			for (;bIt != bI->end(); bIt++){
+				int coreNum = bIt->first-1;
+				coreNum += inc;
+				for (vector<pair<int,int>>::size_type k = 0; k < bIt->second.size(); k++){
+					int tBegin = bIt->second[k].first;
+					int tEnd = bIt->second[k].second;
+					f << "\t\t<node_statistics>" << endl;
+					f << "\t\t	<node_property name=\"id\" value=\""<< coreNum <<"\"/>" << endl;
+					f << "\t\t	<node_property name=\"type\" value=\"busy\"/>" << endl;
+					f << "\t\t	<node_property name=\"start_time\" value=\"" << tBegin << "\"/>" << endl;
+					f << "\t\t	<node_property name=\"end_time\" value=\"" << tEnd << "\"/>" << endl;
+					f << "\t\t	<configuration>" << endl;
+					f << "\t\t	  <conf_property name=\"cluster_id\" value=\"0\"/>" << endl;
+					f << "\t\t	  <conf_property name=\"host_nb\" value=\"1\"/>" << endl;
+					f << "\t\t	  <host_lists>" << endl;
+					f << "\t\t	    <hosts start=\"" << coreNum << "\" nb=\"1\"/>" << endl;
+					f << "\t\t	  </host_lists>" << endl;
+					f << "\t\t	</configuration>" << endl;
+					f << "\t\t</node_statistics>" << endl;
+				}
+			}
+			inc += Resources[i]->GetOneResCoresCount();
+			
+		}
+	}
+}
 
 
 // stages are numbered fom zero
@@ -558,14 +649,14 @@ void Model::GetStageInformation(int stage){
 		double maxEff = 0.0; 
 		vector<vector<pair<double, unsigned int>>> timeCoresPerType;
 		timeCoresPerType.resize(Resources.size());
-		vector<vector<int>> fullUsedNums;
+		vector<vector<int>> stageUsedNums;
 		// if we have right core number for this state
 		if (CheckState(i, stage, timeCoresPerType)) {
 			vector<vector<int>>::const_iterator controlsIt = controls[i].begin();
 			int controlIndex = 0;
 			for (; controlsIt!=controls[i].end(); controlsIt++){
 				timeCore currentTimeCore = timeCoresPerType;
-				if (CheckControl(i, controlIndex, stage, currentTimeCore, fullUsedNums,false)){
+				if (CheckControl(i, controlIndex, stage, currentTimeCore,false, stageUsedNums)){
 					// if it is the last period
 					double currEff = GetEfficiency(stage, currentTimeCore);
 					if (stage == stages-1){
@@ -614,7 +705,7 @@ double Model::GetEfficiency(const int & stage, const timeCore& currentTC){
 }
 
 bool Model::CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage,
-	timeCore& timeCoresPerType, vector <vector<int>>&fullUsedNums, bool isUsedNumsNeeded){
+	timeCore& timeCoresPerType, bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums){
 	try {
 		string errMsg = "timeCoresPerType has wrong size";
 		if (timeCoresPerType.size()!=Resources.size()) throw errMsg;
@@ -626,7 +717,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 			vector <vector<int>> usedNums; 
 			if (tCit->size()!=0){
 				if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources,
-					usedNums, isUsedNumsNeeded)==false) 
+					fullUsedNums, isUsedNumsNeeded, usedNums)==false) 
 					return false;
 			}
 			if (isUsedNumsNeeded){
@@ -635,7 +726,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 						*coreIt += inc;
 				}
 				inc += Resources[typeIndex]->GetCoresCount();
-				copy(usedNums.begin(),usedNums.end(), back_inserter(fullUsedNums));
+				copy(usedNums.begin(),usedNums.end(), back_inserter(stageUsedNums));
 			}
 			typeIndex++;	
 		}
@@ -649,13 +740,14 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 }
 
 bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType){
-	vector <vector<int>> fullUsedNums;
+	vector <vector<int>> stageUsedNums;
+	vector <pair<vector<int>,vector<int>>> fullUsedNums;
 	Workflows[0]->SetTimesCoresForState(states[state], timeCoresPerType);
 	vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 	unsigned int typeIndex = 0;
 	for (;tCit != timeCoresPerType.end(); tCit++){
 		if (tCit->size()!=0){
-			if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources, fullUsedNums, false)==false) 
+			if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources, fullUsedNums, false, stageUsedNums)==false) 
 				return false;
 		}
 		typeIndex++;	
