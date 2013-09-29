@@ -1,8 +1,8 @@
 #include "StdAfx.h"
 #include "Model.h"
+#include <boost/filesystem.hpp>
 
-
-
+using namespace boost::filesystem;
 
 bool SortPairs(pair <int, double> p1, pair <int,double> p2){
 	return (p1.second > p2.second);
@@ -16,6 +16,7 @@ void Model::Init (string resFile, string wfFile, string settingsFile, string xml
 	xmlBaseName = xmlFile;
 }
 
+
 void Model::InitSettings(string settingsFile){
 	try{
 		char second[21]; 
@@ -24,27 +25,139 @@ void Model::InitSettings(string settingsFile){
 		string errWrongFormat = "Wrong format in file " + settingsFile + " at line ";
 		string errWrongValue = "Wrong value of parameter ";
 		string errWrongFormatFull = errWrongFormat;
-		if (file.fail()) throw errOpen;
+		string errEarlyEnd = "Unexpected end of file " + settingsFile;
+		if (file.fail()) throw UserException(errOpen);
 		unsigned int line = 0;
 		string s, trim;
 		getline(file,s);
 		++line;
+		if (file.eof()) throw UserException(errEarlyEnd);
 		trim = "canExecuteOnDiffResources=";
 		size_t found = s.find(trim);
 		if (found != 0) {
 			sprintf_s(second, "%d", line);
 			errWrongFormatFull += second;
-			throw errWrongFormatFull;
+			throw UserException(errWrongFormatFull);
 		}
 		s.erase(0,trim.size());
 		int flag = atoi(s.c_str());
 		if (flag==1) canExecuteOnDiffResources = true;
 		else if (flag == 0) canExecuteOnDiffResources = false;
-		else throw errWrongValue + "canExecuteOnDiffResources";
+		else throw UserException(errWrongValue + "canExecuteOnDiffResources");
+		// InputFolderPath="FolderName"
+		getline(file,s);
+		++line;
+		if (file.eof()) throw UserException(errEarlyEnd);
+		trim = "InputFolderPath=\"";
+		found = s.find(trim);
+		if (found != 0) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(0,trim.size());
+		trim = "\"";
+		found = s.find(trim);
+		if (found != s.size()-1) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(found,1);
+		path dir = s;
+		// DebugInfoFile="debugInfoFileName"
+		getline(file,s);
+		++line;
+		if (file.eof()) throw UserException(errEarlyEnd);
+		trim = "DebugInfoFile=\"";
+		found = s.find(trim);
+		if (found != 0) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(0,trim.size());
+		trim = "\"";
+		found = s.find(trim);
+		if (found != s.size()-1) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(found,1);
+		string openErr = " DebugInfoFile cannot be open";
+		ex.open(s, ios::app);
+		if (ex.fail()) throw UserException(openErr);
+		// ResultFile="result.txt"
+		getline(file,s);
+		++line;
+		if (file.eof()) throw UserException(errEarlyEnd);
+		trim = "ResultFile=\"";
+		found = s.find(trim);
+		if (found != 0) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(0,trim.size());
+		trim = "\"";
+		found = s.find(trim);
+		if (found != s.size()-1) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(found,1);
+		resFileName = s;
+		// T=Tvalue
+		getline(file,s);
+		++line;
+		trim = "T=";
+		found = s.find(trim);
+		if (found != 0) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(0,trim.size());
+		T = stoi(s);
+		// delta=value
+		// T=Tvalue
+		getline(file,s);
+		++line;
+		trim = "delta=";
+		found = s.find(trim);
+		if (found != 0) {
+			sprintf_s(second, "%d", line);
+			errWrongFormatFull += second;
+			throw UserException(errWrongFormatFull);
+		}
+		s.erase(0,trim.size());
+		delta = stoi(s);
+		stages = T/delta;
+		for (int i = 0; i <= T; i+=delta) stageBorders.push_back(i);
+		FullInfo.resize(stages);
+		// read all filenames from path
+		string resourcesFileName;
+		vector <string> WFFileNames;
+		for (directory_iterator it(dir), end; it != end; ++it) 
+		{
+			std::cout << "File processed - ";
+			std::cout << *it << std::endl;
+			string filename = it->path().string();
+			if (filename.find("res")==string::npos && filename.find("n")==string::npos) continue;
+			if (filename.find("res")!=string::npos )
+				resourcesFileName = filename;
+			else 
+				WFFileNames.push_back(filename);
+		}
+		InitResources(resourcesFileName);
+		for (vector<string>::iterator it = WFFileNames.begin(); it!= WFFileNames.end(); it++)
+			InitWorkflows(*it);
 	}
-	catch (const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -60,21 +173,21 @@ void Model::InitWorkflows(string f){
 		string errCoresCount = "Cores count cannot be less than 1";
 		string errConnMatrix = "Wrong value in connectivity matrix";
 		string errWrongFormatFull = errWrongFormat;
-		if (file.fail()) throw errOpen;
+		if (file.fail()) throw UserException(errOpen);
 
 		string s, trim; int line = 0;
 		getline(file,s);
 		++line;
-		if (file.eof()) throw errEarlyEnd;
+		if (file.eof()) throw UserException(errEarlyEnd);
 		trim = "Workflows count = ";
 		size_t found = s.find(trim);
 		if (found != 0) {
 			sprintf_s(second, "%d", line);
 			errWrongFormatFull += second;
-			throw errWrongFormatFull;
+			throw UserException(errWrongFormatFull);
 		}
 		s.erase(0,trim.size());
-		int workflowsCount = atoi(s.c_str());
+		int workflowsCount = stoi(s);
 		vector <int> types; map <pair <int,int>, double> execTime; vector <Package*> pacs; 
 		vector <int> cCount; 
 		vector <vector <int>> connectMatrix;
@@ -83,12 +196,12 @@ void Model::InitWorkflows(string f){
 			int packagesCount = 0;
 			getline(file,s);
 			++line;
-			if (file.eof()) throw errEarlyEnd;
+			if (file.eof()) throw UserException(errEarlyEnd);
 			
 			if ((found = s.find("(")) == std::string::npos){
 				sprintf_s(second, "%d", line);
 				errWrongFormatFull += second;
-				throw errWrongFormatFull;
+				throw UserException(errWrongFormatFull);
 			}
 			s.erase(0,found+1);
 			istringstream iss(s);
@@ -96,7 +209,7 @@ void Model::InitWorkflows(string f){
 			if (iss.fail()) {
 				sprintf_s(second, "%d", line);
 				errWrongFormatFull += second;
-				throw errWrongFormatFull;
+				throw UserException(errWrongFormatFull);
 			}
 			if (packagesCount < 1) {
 				sprintf_s(second, "%d", i+1);
@@ -104,25 +217,25 @@ void Model::InitWorkflows(string f){
 				beginStr += second;
 				beginStr += " - ";
 				beginStr += errPackagesCount;
-				throw beginStr;
+				throw UserException(beginStr);
 			}
 			for (int j = 0; j < packagesCount; j++){
 				double alpha = 0.0; // part of consequentually executed code
 				++fullPackagesCount;
 				// Package [packageNumber]
 				getline(file,s);
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				++line;
 				// Alpha: [alpha value]
 				getline(file,s);
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				++line;
 				trim = "Alpha: ";
 				size_t found = s.find(trim);
 				if (found != 0) {
 					sprintf_s(second, "%d", line);
 					errWrongFormatFull += second;
-					throw errWrongFormatFull;
+					throw UserException(errWrongFormatFull);
 				}
 				s.erase(0,trim.size());
 				iss.str(s);
@@ -131,18 +244,18 @@ void Model::InitWorkflows(string f){
 				if (iss.fail()) {
 					sprintf_s(second, "%d", line);
 					errWrongFormatFull += second;
-					throw errWrongFormatFull;
+					throw UserException(errWrongFormatFull);
 				}
 				// Resource types: [resource types values]. -1 means all possible resources
 				getline(file,s);
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				++line;
 				trim = "Resources types: ";
 				found = s.find(trim);
 				if (found != 0) {
 					sprintf_s(second, "%d", line);
 					errWrongFormatFull += second;
-					throw errWrongFormatFull;
+					throw UserException(errWrongFormatFull);
 				}
 				s.erase(0,trim.size());
 				iss.str(s);
@@ -161,7 +274,7 @@ void Model::InitWorkflows(string f){
 					if (iss.fail()) {
 						sprintf_s(second, "%d", line);
 						errWrongFormatFull += second;
-						throw errWrongFormatFull;
+						throw UserException(errWrongFormatFull);
 					}
 					types.push_back(typeNumber);
 					iss >> comma;
@@ -171,14 +284,14 @@ void Model::InitWorkflows(string f){
 				
 				// Cores count: [cores count values]
 				getline(file,s);
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				++line;
 				trim = "Cores count: ";
 				found = s.find(trim);
 				if (found != 0) {
 					sprintf_s(second, "%d", line);
 					errWrongFormatFull += second;
-					throw errWrongFormatFull;
+					throw UserException(errWrongFormatFull);
 				}
 				s.erase(0,trim.size());
 				int coresCount = 0;
@@ -191,7 +304,7 @@ void Model::InitWorkflows(string f){
 					if (iss.fail()) {
 						sprintf_s(second, "%d", line);
 						errWrongFormatFull += second;
-						throw errWrongFormatFull;
+						throw UserException(errWrongFormatFull);
 					}
 					cCount.push_back(coreCount);
 					iss >> comma;
@@ -203,20 +316,20 @@ void Model::InitWorkflows(string f){
 					beginStr += second;
 					beginStr += " - ";
 					beginStr += errCoresCount;
-					throw beginStr;
+					throw UserException(beginStr);
 				}
 				
 				// Computational amount: [amount value]
 				long int amount = 0;
 				getline(file,s);
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				++line;
 				trim = "Computation amount: ";
 				found = s.find(trim);
 				if (found != 0) {
 					sprintf_s(second, "%d", line);
 					errWrongFormatFull += second;
-					throw errWrongFormatFull;
+					throw UserException(errWrongFormatFull);
 				}
 				s.erase(0,trim.size());
 				iss.str(s);
@@ -225,7 +338,7 @@ void Model::InitWorkflows(string f){
 				if (iss.fail()) {
 					sprintf_s(second, "%d", line);
 					errWrongFormatFull += second;
-					throw errWrongFormatFull;
+					throw UserException(errWrongFormatFull);
 				}
 
 				for (unsigned int k = 0; k < types.size(); k++){
@@ -246,12 +359,12 @@ void Model::InitWorkflows(string f){
 				cCount.clear();
 			}
 			getline(file,s);
-			if (file.eof()) throw errEarlyEnd;
+			if (file.eof()) throw UserException(errEarlyEnd);
 			++line;
 			for (int j = 0; j < packagesCount; j++){
 				vector <int> row;
 				getline(file,s);
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				++line;
 				iss.str(s);
 				iss.clear();
@@ -261,7 +374,7 @@ void Model::InitWorkflows(string f){
 					if (iss.fail()) {
 						sprintf_s(second, "%d", line);
 						errWrongFormatFull += second;
-						throw errWrongFormatFull;
+						throw UserException(errWrongFormatFull);
 					}
 					if (val!=0  && val!=1){
 						sprintf_s(second, "%d", i+1);
@@ -269,39 +382,24 @@ void Model::InitWorkflows(string f){
 						beginStr += second;
 						beginStr += " - ";
 						beginStr += errConnMatrix;
-						throw beginStr;
+						throw UserException(beginStr);
 					}
 					row.push_back(val);
 				}
 				connectMatrix.push_back(row);
 			}
 			
-			Workflows.push_back(new Workflow(pacs,connectMatrix,i+1, Resources, typesCores));
+			Workflows.push_back(new Workflow(pacs,connectMatrix,Workflows.size() + i+1, Resources, typesCores));
 			pacs.clear();
 			connectMatrix.clear();
 		}
-		for (unsigned int i = 0; i < Workflows.size(); i++){
-			Workflows[i]->SetIsPackageInit();
-			Workflows[i]->SetPackagesStates();
-			Workflows[i]->PrintExecTime();
-			int t = clock();
-			Workflows[i]->SetFullPackagesStates(0, states, controls, nextStateNumbers);
-			for (int j = 0; j < stages; j++) 
-				FullInfo[j].resize(states.size());
-			cout << "Time of SetFullPackagesStates() " << (clock()-t)/1000.0 << endl;
-			t = clock();
-			/*Workflows[i]->PrintPackagesStates(states);
-			cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
-			Workflows[i]->PrintControls(states,controls, nextStateNumbers);
-			cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;*/
-		}
+		
 	}
-	catch (const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
-	
 }
 
 void Model::InitResources(string f){
@@ -313,34 +411,36 @@ void Model::InitResources(string f){
 		string errEarlyEnd = "Unexpected end of file " + f;
 		string errWrongFormat = "Wrong format in file " + f + " at line ";
 		string errWrongFormatFull = errWrongFormat;
+		string errStageBorders = "InitResources(): stageBorders vector is empty!";
+		if (stageBorders.size()==0) throw UserException(errStageBorders);
 		if (file.fail()) 
-			throw errOpen;
+			throw UserException(errOpen);
 		string s, trim; int line = 0;
 		getline(file,s);
 		++line;
-		if (file.eof()) throw errEarlyEnd;
+		if (file.eof()) throw UserException(errEarlyEnd);
 		trim = "Resources count = ";
 		size_t found = s.find(trim);
 		if (found != 0) {
 			sprintf_s(second, "%d", line);
 			errWrongFormatFull += second;
-			throw errWrongFormatFull;
+			throw UserException(errWrongFormatFull);
 		}
 		s.erase(0,trim.size());
-		int allResourcesCount = atoi(s.c_str());
+		int allResourcesCount = stoi(s);
 
 		trim = "Resources types count = ";
 		getline(file,s);
 		++line;
-		if (file.eof()) throw errEarlyEnd;
+		if (file.eof()) throw UserException(errEarlyEnd);
 		found = s.find(trim);
 		if (found != 0) {
 			sprintf_s(second, "%d", line);
 			errWrongFormatFull += second;
-			throw errWrongFormatFull;
+			throw UserException(errWrongFormatFull);
 		}
 		s.erase(0,trim.size());
-		int typesCount = atoi(s.c_str());
+		int typesCount = stoi(s);
 		int resourcesCount, coresCount = 0;
 		
 		for (int i = 0; i < typesCount; i++)
@@ -349,7 +449,7 @@ void Model::InitResources(string f){
 			istringstream iss(s);
 			getline(file,s);
 			++line;
-			if (file.eof()) throw errEarlyEnd;
+			if (file.eof()) throw UserException(errEarlyEnd);
 			sprintf_s(second, "%d", i+1);
 			string first = "Type ";
 			trim = first + second;
@@ -357,7 +457,7 @@ void Model::InitResources(string f){
 			if (found != 0) {
 				sprintf_s(second, "%d", line);
 				errWrongFormatFull += second;
-				throw errWrongFormatFull;
+				throw UserException(errWrongFormatFull);
 			}
 			s.erase(0,trim.size()+2);
 			iss.str(s);
@@ -366,7 +466,7 @@ void Model::InitResources(string f){
 			if (iss.fail()) {
 				sprintf_s(second, "%d", line);
 				errWrongFormatFull += second;
-				throw errWrongFormatFull;
+				throw UserException(errWrongFormatFull);
 			}
 			found = s.find(",");
 			s.erase(0,found+2);
@@ -376,7 +476,7 @@ void Model::InitResources(string f){
 			if (iss.fail()) {
 				sprintf_s(second, "%d", line);
 				errWrongFormatFull += second;
-				throw errWrongFormatFull;
+				throw UserException(errWrongFormatFull);
 			}
 			double perf = 0.0;
 			getline(file,s);
@@ -385,7 +485,7 @@ void Model::InitResources(string f){
 			if (found != 0) {
 				sprintf_s(second, "%d", line);
 				errWrongFormatFull += second;
-				throw errWrongFormatFull;
+				throw UserException(errWrongFormatFull);
 			}
 			s.erase(0,trim.size());
 			perf = atof(s.c_str());
@@ -393,12 +493,12 @@ void Model::InitResources(string f){
 			for (int j = 0; j < resourcesCount; j++){
 				getline(file,s);
 				++line;
-				if (file.eof()) throw errEarlyEnd;
+				if (file.eof()) throw UserException(errEarlyEnd);
 				busyIntervals.clear();
 				for (int k = 0; k < coresCount; k++){
 					getline(file,s);
 					++line;
-					if (file.eof()) throw errEarlyEnd;
+					if (file.eof()) throw UserException(errEarlyEnd);
 					sprintf_s(second, "%d", k+1);
 					first = "Core ";
 					trim = first + second;
@@ -406,13 +506,13 @@ void Model::InitResources(string f){
 					if (found != 0) {
 						sprintf_s(second, "%d", line);
 						errWrongFormatFull += second;
-						throw errWrongFormatFull;
+						throw UserException(errWrongFormatFull);
 					}
 					s.erase(0,trim.size()+1);
-					int diapCount = atoi(s.c_str());
+					int diapCount = stoi(s);
 					vector<pair<int,int>> oneResDiaps;
 					for (int l = 0; l < diapCount; l++){
-						if (file.eof()) throw errEarlyEnd;
+						if (file.eof()) throw UserException(errEarlyEnd);
 						getline(file,s);
 						++line;
 						iss.str(s);
@@ -422,13 +522,13 @@ void Model::InitResources(string f){
 						if (iss.fail()) {
 							sprintf_s(second, "%d", line);
 							errWrongFormatFull += second;
-							throw errWrongFormatFull;
+							throw UserException(errWrongFormatFull);
 						}
 						iss >> two;
 						if (iss.fail()) {
 							sprintf_s(second, "%d", line);
 							errWrongFormatFull += second;
-							throw errWrongFormatFull;
+							throw UserException(errWrongFormatFull);
 						}
 						oneResDiaps.push_back(make_pair(one,two));
 					}
@@ -460,13 +560,40 @@ void Model::InitResources(string f){
 		koeff = 2.00 / allCoresCount;
 		file.close();
 	}
-	catch (const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
-	
-	
+}
+
+// firstWfNum from ZERO
+void Model::StagedScheme(int firstWfNum){
+	try{
+		string wrongFirstNum = "StagedScheme(): wrong firstWFNum";
+		if (firstWfNum < 0 || firstWfNum > Workflows.size()-1) throw UserException(wrongFirstNum);
+		for (unsigned int i = 0; i < Workflows.size(); i++){
+				Workflows[i]->SetIsPackageInit();
+				Workflows[i]->SetPackagesStates();
+				Workflows[i]->PrintExecTime();
+				int t = clock();
+				Workflows[i]->SetFullPackagesStates(0, states, controls, nextStateNumbers);
+				for (int j = 0; j < stages; j++) 
+					FullInfo[j].resize(states.size());
+				cout << "Time of SetFullPackagesStates() " << (clock()-t)/1000.0 << endl;
+				t = clock();
+				Workflows[i]->PrintPackagesStates(states);
+				cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
+				Workflows[i]->PrintControls(states,controls, nextStateNumbers);
+				cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;
+				states.clear(); controls.clear(); nextStateNumbers.clear();
+		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void Model::SetForcedBricks(){
@@ -495,7 +622,11 @@ void Model::SetForcedBricks(){
 
 void Model::DirectBellman(){
 	try{
-		ofstream f("result.txt");
+		string emptyFileName = "DirectBellman(): empty res file name";
+		string errFileOpen = "DirectBellman(): file open error";
+		if (resFileName.size()==0) throw UserException(emptyFileName);
+		ofstream f(resFileName, ios::app);
+		if (f.fail()) throw UserException(errFileOpen);
 		int currentNum = 0;
 		double maxEff = FullInfo[0][0].second;
 		for (int i = 0; i < stages; i++){
@@ -512,8 +643,8 @@ void Model::DirectBellman(){
 			for (int j = 0; j < controls[currentNum][uopt].size(); j++){
 				if (controls[currentNum][uopt][j] != -1 
 					&& Workflows[0]->GetLevel(j,states[currentNum][j])==0){
-					if (fullUsedNumIndex > stageUsedNums.size()-1) throw errMsgIndex;
-					if (stageUsedNums.size()==0) throw errMsgSize;
+					if (fullUsedNumIndex > stageUsedNums.size()-1) throw UserException(errMsgIndex);
+					if (stageUsedNums.size()==0) throw UserException(errMsgSize);
 					stagesCores.push_back(make_tuple(j,i,stageUsedNums[fullUsedNumIndex]));
 					fullUsedNumIndex++;
 				}
@@ -523,9 +654,9 @@ void Model::DirectBellman(){
 		BellmanToXML();
 		f.close();
 	}
-	catch (const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -708,7 +839,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 	timeCore& timeCoresPerType, bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums){
 	try {
 		string errMsg = "timeCoresPerType has wrong size";
-		if (timeCoresPerType.size()!=Resources.size()) throw errMsg;
+		if (timeCoresPerType.size()!=Resources.size()) throw UserException(errMsg);
 		Workflows[0]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType);
 		vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 		unsigned int typeIndex = 0;
@@ -732,9 +863,9 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 		}
 		return true;
 	}
-	catch (const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
