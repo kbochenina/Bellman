@@ -3,7 +3,7 @@
 
 #include "Workflow.h"
 #include "ResourceType.h"
-
+#include "UserException.h"
 
 
 typedef pair <int, double> StateInformation; // (number of uopt, max eff on this state)
@@ -24,6 +24,7 @@ class Model
 	bool canExecuteOnDiffResources; // if true one package can execute on some cores of different resources of one type
 	double koeff;
 	vector <pair<unsigned short, unsigned short>> typesCores;
+	string resFileName;
 	// for each state: vector of controls. Each package control can be -1 (if no resources used)
 	// or index in typesCores
 	vector <vector<vector<int>>> controls; 
@@ -35,7 +36,6 @@ class Model
 	// methods
 	void InitResources(string);
 	void InitWorkflows(string);
-	void InitSettings(string);
 	bool CheckState (const unsigned int state, const unsigned int stage,timeCore&);
 	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, 
 		bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums);
@@ -52,7 +52,9 @@ class Model
 	void StagesCoresToXML(ofstream&f);
 public:
 	Model(){}
+	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO
 	void Init (string resFile, string wfFile, string settingsFile, string xmlFile);
+	void InitSettings(string);
 	double Greedy(int uopt, double currentEff);
 	void GetStageInformation(int stage);
 	void DirectBellman();

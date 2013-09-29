@@ -2,7 +2,7 @@
 #include "Workflow.h"
 #include "time.h"
 #include <iostream>
-
+#include "UserException.h"
 using namespace std;
 
 
@@ -118,28 +118,36 @@ void Workflow::SetFullPackagesStates(int currentPackage, vector <vector<int>>& p
 
 void Workflow::SetNextStateNumbers(vector <vector<int>>& packagesStates, vector <vector<vector<int>>>& controls, 
 	vector <vector<int>>& nextStateNumbers){
-	// i is also stateNumber
-	for (unsigned int i = 0; i < nextPackageStateNumbers.size(); i++){
-		vector <int> readyNumbers;
-		for (unsigned int j = 0; j < nextPackageStateNumbers[i].size(); j++){
-			vector<vector<int>>::iterator it = find(packagesStates.begin()+i, packagesStates.end(), nextPackageStateNumbers[i][j]);
-			// find next state number
-			readyNumbers.push_back(distance(packagesStates.begin(),it));
-			/*for (int stateIndex = i; stateIndex < packagesStates.size(); stateIndex++){
-				bool flag = true;
-				for (int k = 0; k < nextPackageStateNumbers[i][j].size(); k++){
-					if (nextPackageStateNumbers[i][j][k] != packagesStates[stateIndex][k]) {
-						flag = false; break;
+	try{
+		// i is also stateNumber
+		for (unsigned int i = 0; i < nextPackageStateNumbers.size(); i++){
+			vector <int> readyNumbers;
+			for (unsigned int j = 0; j < nextPackageStateNumbers[i].size(); j++){
+				vector<vector<int>>::iterator it = find(packagesStates.begin()+i, packagesStates.end(), nextPackageStateNumbers[i][j]);
+				if (it==packagesStates.end()) throw UserException("SetNextStateNumbers() error: cannot find next state");
+				// find next state number
+				readyNumbers.push_back(distance(packagesStates.begin(),it));
+				/*for (int stateIndex = i; stateIndex < packagesStates.size(); stateIndex++){
+					bool flag = true;
+					for (int k = 0; k < nextPackageStateNumbers[i][j].size(); k++){
+						if (nextPackageStateNumbers[i][j][k] != packagesStates[stateIndex][k]) {
+							flag = false; break;
+						}
 					}
-				}
-				if (flag) { 
-					readyNumbers.push_back(stateIndex); break;
-				}
-			}*/
+					if (flag) { 
+						readyNumbers.push_back(stateIndex); break;
+					}
+				}*/
+			}
+			nextStateNumbers.push_back(readyNumbers);
 		}
-		nextStateNumbers.push_back(readyNumbers);
+		nextPackageStateNumbers.clear();
 	}
-	nextPackageStateNumbers.clear();
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void Workflow::GetControls(vector<int>& newState, unsigned int currentNum){
@@ -282,6 +290,15 @@ bool Workflow::Check (const int& state, const vector <int> & otherStates, const 
 		if (IsDepends(currentPackage, otherPackage)){
 			if (stateLevel!=1 && otherStateLevel!=-1) return false;
 			if (stateLevel==1 && otherStateLevel==-1){
+				bool isDependsOnPrevious = false;
+				// if package depends on packages that will be considered later, we miss this state
+				for (int j = 0; j < currentPackage; j++){
+					if (IsDepends(j,otherPackage)) {
+						isDependsOnPrevious = true;
+						break;
+					}
+				}
+				if (isDependsOnPrevious) continue;
 				bool isOtherReady = true;
 				for (unsigned int j = 0; j < otherStates.size(); j++){
 					if ( i!=j && IsDepends(currentPackage + j + 1, otherPackage) && packages[currentPackage+j + 1]->GetLevel(otherStates[j])!=1)
@@ -324,6 +341,10 @@ void Workflow::PrintControls(vector <vector<int>> &packagesStates, vector <vecto
 	ofstream f(fileName);
 	for (unsigned int i = 0; i < controls.size(); i++){
 		f << "State " << i+1 << endl;
+		for (unsigned int j = 0; j < packagesStates[i].size(); j++){
+			f << packagesStates[i][j];
+			f << " ";
+		}
 		// print state
 		for (unsigned int j = 0; j < packagesStates[i].size(); j++){
 			packages[j]->PrintState(f, packagesStates[i][j]);
@@ -339,8 +360,9 @@ void Workflow::PrintControls(vector <vector<int>> &packagesStates, vector <vecto
 			}
 			f << endl;
 			for (unsigned int k = 0; k < packagesStates[nextStateNumbers[i][j]].size(); k++){
-			packages[k]->PrintState(f, packagesStates[nextStateNumbers[i][j]][k]);
-			f << " ";
+				f << nextStateNumbers[i][j] << " ";
+				packages[k]->PrintState(f, packagesStates[nextStateNumbers[i][j]][k]);
+				f << " ";
 		}
 		f << endl;
 		}

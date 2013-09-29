@@ -30,33 +30,28 @@ int _tmain(int argc, wchar_t** argv)
 		wcout << fileWorkflows << endl;
 		fileEx = argv[3];
 		wcout << fileEx << endl;*/
-		fileSettings = argv[4];
+		fileSettings = argv[1];
 		wcout << fileSettings << endl;
 	}
 
 	try {
-		fileXML = fileResources + fileWorkflows;
-		string openErr = "File with experiment result cannot be open";
-		ex.open(fileEx, ios::app);
-		if (ex.fail()) throw openErr;
+	/*	fileXML = fileResources + fileWorkflows;
 		
-		stages = T/delta;
-		for (int i = 0; i <= T; i+=delta) stageBorders.push_back(i);
+		
+		*/
 		double start = clock();
-		 string sR(fileResources.begin(), fileResources.end()), 
-			 sW(fileWorkflows.begin(), fileWorkflows.end()), sS(fileSettings.begin(),fileSettings.end()), 
-			 sXML(fileXML.begin(), fileXML.end());
-		ex << sW << endl;
+		/* string sR(fileResources.begin(), fileResources.end()), 
+		sW(fileWorkflows.begin(), fileWorkflows.end()), sS(fileSettings.begin(),fileSettings.end()), 
+		sXML(fileXML.begin(), fileXML.end());*/
+		string s(fileSettings.begin(),fileSettings.end());
+		//ex << sW << endl;
 		Model m;
-		m.Init(sR, sW, sS, sXML);
-		for (int i = stages-1; i >= 0; i--){
-			int t = clock();
-			m.GetStageInformation(i);
-			cout << "Time of back procedure for stage " << i << " " << (clock()-t)/1000.0 << "sec" << endl;
-		}
-		m.DirectBellman();
+		//m.Init(sR, sW, sS, sXML);
+		m.InitSettings(s);
+		m.StagedScheme(0);
+		/*
 		
-		ex.close();
+		ex.close();*/
 		cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
 		cout << endl;
 		system("pause");
