@@ -185,16 +185,27 @@ int ResourceType::GetNearestBorderForOneCore(const unsigned int &core, const uns
 }
 
 bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources, 
-	vector <vector<int>>&fullUsedNums, bool isUsedNumsNeeded){
+	vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>& stageUsedNums){
 	vector <int> usedNums;
 	vector <int>& coreTimes = allCoresFreeTimes[stage];
 	vector <int> nearestBorders;
 	for (int i = 0; i < GetCoresCount(); i++) nearestBorders.push_back(GetNearestBorderForOneCore(i,stage));
+	if (isUsedNumsNeeded){
+		// copy to usedNums busy cores received on previous stages
+		vector <pair<vector<int>,vector<int>>>::iterator fIt = fullUsedNums.begin();
+		for (;fIt!=fullUsedNums.end(); fIt++){
+			if (find(fIt->first.begin(),fIt->first.end(),stage)!=fIt->first.end())
+				copy(fIt->second.begin(), fIt->second.end(),back_inserter(usedNums));
+		}
+	}
 	// for each packages
 	for (unsigned int i = 0; i < timeCores.size(); i++){
 		vector <int> usedNumsForOnePackage;
 		double time = timeCores[i].first;
 		int coreNum = timeCores[i].second;
+		int numStages = time/delta;
+		if (time < delta) numStages++;
+		else if ((int)time % delta!=0) numStages++;
 		int coresViewed = 0, numberAdopted = 0;
 		for (int k = 0; k < coreNum; k++){
 			for (unsigned int j = 0; j < coreTimes.size(); j++){
@@ -222,7 +233,10 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		}
 		if (numberAdopted!=coreNum) return false;
 		if (isUsedNumsNeeded) {
-			fullUsedNums.push_back(usedNumsForOnePackage);
+			vector <int> numStagesVec;
+			for (int j = 0; j < numStages; j++) numStagesVec.push_back(stage+j);
+			fullUsedNums.push_back(make_pair(numStagesVec,usedNumsForOnePackage));
+			stageUsedNums.push_back(usedNumsForOnePackage);
 		}
 		
 		// for (unsigned int j = 0; j < usedNums.size(); j++) coreTimes[usedNums[j]]=0;

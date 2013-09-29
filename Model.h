@@ -16,7 +16,6 @@ extern vector<int> stageBorders;
 
 class Model
 {
-	
 	// fields
 	vector <Workflow*> Workflows;
 	std::vector <ResourceType*> Resources;
@@ -30,15 +29,16 @@ class Model
 	vector <vector<vector<int>>> controls; 
 	vector <vector<int>> nextStateNumbers;
 	vector <vector<int>> states; // (stateNum for P1, stateNum for P2, ...)
+	vector <pair<vector<int>,vector<int>>>fullUsedNums;
 	BackBellmanInfo FullInfo;
-	StageInformation StageTable; //?
-	double maxEfficiency; //?
+	string xmlBaseName;
 	// methods
 	void InitResources(string);
 	void InitWorkflows(string);
 	void InitSettings(string);
 	bool CheckState (const unsigned int state, const unsigned int stage,timeCore&);
-	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, vector <vector<int>>&fullUsedNums, bool isUsedNumsNeeded);
+	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, 
+		bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums);
 	void SetForcedBricks();
 	double efficiencyFunction(double x) { return (koeff*(1-x)); }
 	double EfficiencyByPeriod(int busyCores, int t1, int t2){
@@ -46,41 +46,16 @@ class Model
 	}
 	int GetStatesCount() {return states.size();}
 	double GetEfficiency(const int & stage, const timeCore& currentTC);
+	void BellmanToXML();
+	void MetaXMLInfo(ofstream &f);
+	void BusyToXML(ofstream &f);
+	void StagesCoresToXML(ofstream&f);
 public:
 	Model(){}
-	void Init (string resFile, string wfFile, string settingsFile);
-
-	// debug and time measurement functions
+	void Init (string resFile, string wfFile, string settingsFile, string xmlFile);
 	double Greedy(int uopt, double currentEff);
 	void GetStageInformation(int stage);
-	//void CheckForIllegalCoreNumber(vector<vector <OnePackageControl>> &fullPossibleControls);
-	//PossibleControls GetStateControls(int stateNumber, ofstream& file);
-	void GetOneStageControls(int tbegin);
-	void OneStep(int periodNumber);
-	
-	//int GetBusyCores(OneControl& control);
-	//int GetStateNumber(vector <PackageState> &resultState, int stateNum);
-	
 	void DirectBellman();
-	
-	//PossibleControls CheckControls(int i, int);
-	int GetTRealBegin(int l, double level, int periodBegin);
-	/*double GetMaxEfficiency(){
-		double eff = 0.0;
-		for (int i = 0; i < Nodes.size(); i++){
-			multimap <int,pair<int,int>> bi = Nodes[i]->GetBusyIntervals();
-			multimap <int,pair<int,int>>::iterator bii = bi.begin();
-			for (; bii!=bi.end(); bii++)
-			{
-				int numCores = (*bii).first;
-				int tb = (*bii).second.first;
-				int te = (*bii).second.second;
-				eff += EfficiencyByPeriod(numCores,tb,te);
-			}
-		}
-		maxEfficiency = 1-eff;
-		return maxEfficiency;
-	}*/
 	~Model(void);
 };
 
