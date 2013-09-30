@@ -190,14 +190,14 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	vector <int>& coreTimes = allCoresFreeTimes[stage];
 	vector <int> nearestBorders;
 	for (int i = 0; i < GetCoresCount(); i++) nearestBorders.push_back(GetNearestBorderForOneCore(i,stage));
-	if (isUsedNumsNeeded){
+	//if (isUsedNumsNeeded){
 		// copy to usedNums busy cores received on previous stages
-		vector <pair<vector<int>,vector<int>>>::iterator fIt = fullUsedNums.begin();
-		for (;fIt!=fullUsedNums.end(); fIt++){
-			if (find(fIt->first.begin(),fIt->first.end(),stage)!=fIt->first.end())
-				copy(fIt->second.begin(), fIt->second.end(),back_inserter(usedNums));
-		}
+	vector <pair<vector<int>,vector<int>>>::iterator fIt = fullUsedNums.begin();
+	for (;fIt!=fullUsedNums.end(); fIt++){
+		if (find(fIt->first.begin(),fIt->first.end(),stage)!=fIt->first.end())
+			copy(fIt->second.begin(), fIt->second.end(),back_inserter(usedNums));
 	}
+	//}
 	// for each packages
 	for (unsigned int i = 0; i < timeCores.size(); i++){
 		vector <int> usedNumsForOnePackage;
@@ -232,10 +232,12 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 			}
 		}
 		if (numberAdopted!=coreNum) return false;
+		
+		vector <int> numStagesVec;
+		for (int j = 0; j < numStages; j++) numStagesVec.push_back(stage+j);
+		fullUsedNums.push_back(make_pair(numStagesVec,usedNumsForOnePackage));
+
 		if (isUsedNumsNeeded) {
-			vector <int> numStagesVec;
-			for (int j = 0; j < numStages; j++) numStagesVec.push_back(stage+j);
-			fullUsedNums.push_back(make_pair(numStagesVec,usedNumsForOnePackage));
 			stageUsedNums.push_back(usedNumsForOnePackage);
 		}
 		
