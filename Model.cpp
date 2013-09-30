@@ -160,6 +160,11 @@ void Model::InitSettings(string settingsFile){
 		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
+	catch (std::exception& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void Model::InitWorkflows(string f){
@@ -404,6 +409,7 @@ void Model::InitWorkflows(string f){
 
 void Model::InitResources(string f){
 	try{
+		fullCoresCount = 0;
 		map <int, vector<pair <int,int>>> busyIntervals;
 		char second[21]; // enough to hold all numbers up to 64-bits
 		ifstream file(f.c_str(), ifstream::in);
@@ -539,7 +545,7 @@ void Model::InitResources(string f){
 				typeResources.push_back(oneRes);
 			}
 			Resources.push_back(new ResourceType(i+1, typeResources, perf));
-			
+			fullCoresCount += Resources.back()->GetCoresCount();
 		}
 		
 		int initVal = 0;
@@ -570,6 +576,7 @@ void Model::InitResources(string f){
 // firstWfNum from ZERO
 void Model::StagedScheme(int firstWfNum){
 	try{
+		vector <int>usedWFNums;
 		string wrongFirstNum = "StagedScheme(): wrong firstWFNum";
 		if (firstWfNum < 0 || firstWfNum > Workflows.size()-1) throw UserException(wrongFirstNum);
 		for (unsigned int i = 0; i < Workflows.size(); i++){
@@ -586,8 +593,117 @@ void Model::StagedScheme(int firstWfNum){
 				cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
 				Workflows[i]->PrintControls(states,controls, nextStateNumbers);
 				cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;
-				states.clear(); controls.clear(); nextStateNumbers.clear();
+				if (i==firstWfNum) {
+					currentWfNum = firstWfNum;
+					BackBellmanProcedure();
+					DirectBellman(i);
+					allStagesCores = stagesCores;
+					usedWFNums.push_back(firstWfNum);
+					/*BellmanToXML(true);
+					std::system("pause");*/
+					AddDiaps(0, firstWfNum);
+					stagesCores.clear();
+					/*BellmanToXML(true);
+					std::system("pause");*/
+				}
+				states.clear(); controls.clear(); nextStateNumbers.clear(); fullUsedNums.clear(); stagesCores.clear();
 		}
+		vector <tuple<int,int,vector<int>>> bestStagesCores;
+		while (usedWFNums.size() != Workflows.size()){
+			double maxEff = 0.0;
+			int bestWfNum = -1;
+			for (vector<Workflow*>::size_type i = 0; i < Workflows.size(); i++){
+				if (find(usedWFNums.begin(), usedWFNums.end(), i)== usedWFNums.end()){
+					currentWfNum = i;
+					ReadData(i);
+					BackBellmanProcedure();
+					double currentEff = DirectBellman(i);
+					if (maxEff < currentEff){
+						maxEff = currentEff;
+						bestWfNum = i;
+						bestStagesCores = stagesCores;
+					}
+					states.clear(); controls.clear(); nextStateNumbers.clear(); fullUsedNums.clear(); stagesCores.clear();
+				}
+			}
+			int diapBegin = allStagesCores.size();
+			copy(bestStagesCores.begin(), bestStagesCores.end(),back_inserter(allStagesCores));
+			usedWFNums.push_back(bestWfNum);
+			usedNums = usedWFNums;
+			stagesCores = bestStagesCores;
+			currentWfNum = bestWfNum;
+			BellmanToXML(true);
+			std::system("pause");
+			AddDiaps(diapBegin, bestWfNum);
+			stagesCores.clear();
+			BellmanToXML(true);
+			std::system("pause");
+		}
+		usedNums = usedWFNums;
+		for (vector<ResourceType*>::iterator it = Resources.begin(); it!=Resources.end(); it++){
+			(*it)->SetInitBusyIntervals();
+		}
+		stagesCores = allStagesCores;
+		
+		BellmanToXML(false);
+
+		//int t = clock();
+		//cout << "Time of reading data " << (clock()-t)/1000.0 << "sec" << endl;
+
+		
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void Model::AddDiaps(int beginIndex, int wfNum){
+	int numDiaps = allStagesCores.size() - beginIndex;
+	for (int i = beginIndex; i < allStagesCores.size(); i++){
+		int package = allStagesCores[i].get_head();
+		int stageBegin = allStagesCores[i].get<1>();
+		int stageCount = 0;
+		vector <int> cores = allStagesCores[i].get<2>();
+		int type = GetResourceType(cores[0]);
+		int dec = GetResourceTypeBeginIndex(type);
+		for (vector<int>::iterator it = cores.begin(); it!= cores.end(); it++)
+			*it -= dec;
+		cout << "type = " << type << " cores=" << cores.size() << " ";
+		double execTime = Workflows[wfNum]->GetExecTime(package, type+1, cores.size());
+		if (execTime < delta) stageCount = 1;
+		else if ((int)execTime % delta == 0) stageCount = execTime/delta;
+		else stageCount = execTime/delta + 1;
+		cout << wfNum << " package = " << package << " " << execTime << " "<< stageCount << endl;
+		Resources[type]->AddDiaps(stageBegin, stageCount, cores);
+	}
+}
+
+int Model::GetResourceType(int number){
+	try{
+		if (number < 0 || number > fullCoresCount-1) throw UserException("GetResourceType(): wrong coreNumber");
+		int current = 0;
+		for (vector <ResourceType*>::iterator it = Resources.begin(); it!= Resources. end(); it++){
+			int currentCoreCount = (*it)->GetCoresCount();
+			if (number >=current && number < current + currentCoreCount) return distance(Resources.begin(), it);
+			current+=currentCoreCount;
+		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+int Model::GetResourceTypeBeginIndex(int type){
+	try{
+		if (type < 0 || type > Resources.size()-1) throw UserException("GetResourceTypeBeginIndex(): wrong typeNumber");
+		int current = 0;
+		for (int i = 0; i < type; i++)
+			current += Resources[i]->GetCoresCount();
+		return current;
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
@@ -620,12 +736,12 @@ void Model::SetForcedBricks(){
 	}
 }
 
-void Model::DirectBellman(){
+double Model::DirectBellman(int wfNum){
 	try{
 		string emptyFileName = "DirectBellman(): empty res file name";
 		string errFileOpen = "DirectBellman(): file open error";
 		if (resFileName.size()==0) throw UserException(emptyFileName);
-		ofstream f(resFileName, ios::app);
+		ofstream f(resFileName);
 		if (f.fail()) throw UserException(errFileOpen);
 		int currentNum = 0;
 		double maxEff = FullInfo[0][0].second;
@@ -634,15 +750,15 @@ void Model::DirectBellman(){
 			timeCore timeCores;
 			timeCores.resize(Resources.size());
 			int uopt = FullInfo[i][currentNum].first;
-			Workflows[0]->PrintState(states[currentNum], f);
-			Workflows[0]->PrintControl(controls[currentNum][uopt], f);
+			Workflows[wfNum]->PrintState(states[currentNum], f);
+			Workflows[wfNum]->PrintControl(controls[currentNum][uopt], f);
 			CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums);
 			int fullUsedNumIndex = 0;
-			string errMsgIndex = "Wrong fullUsedNumIndex value",
-				errMsgSize = "Wrong fullUsedNums size()";
+			string errMsgIndex = "DirectBellman(): Wrong fullUsedNumIndex value",
+				errMsgSize = "DirectBellman() :Wrong fullUsedNums size()";
 			for (int j = 0; j < controls[currentNum][uopt].size(); j++){
 				if (controls[currentNum][uopt][j] != -1 
-					&& Workflows[0]->GetLevel(j,states[currentNum][j])==0){
+					&& Workflows[wfNum]->GetLevel(j,states[currentNum][j])==0){
 					if (fullUsedNumIndex > stageUsedNums.size()-1) throw UserException(errMsgIndex);
 					if (stageUsedNums.size()==0) throw UserException(errMsgSize);
 					stagesCores.push_back(make_tuple(j,i,stageUsedNums[fullUsedNumIndex]));
@@ -651,7 +767,8 @@ void Model::DirectBellman(){
 			}
 			currentNum = nextStateNumbers[currentNum][uopt];
 		}
-		BellmanToXML();
+		return maxEff;
+		//BellmanToXML();
 		f.close();
 	}
 	catch (UserException& e){
@@ -661,24 +778,29 @@ void Model::DirectBellman(){
 	}
 }
 
-void Model::BellmanToXML(){
-	string name = xmlBaseName + "_DP.jed";
+void Model::BellmanToXML(bool isOne){
+	string name = xmlBaseName + "_DP_.jed";
 	ofstream f(name);
 	MetaXMLInfo(f);
 	f << "\t<node_infos>\n";
 	BusyToXML(f);
-	StagesCoresToXML(f);
+	if (!isOne) StagesCoresToXML(f);
+	else 
+		StagesCoresToXML(f, currentWfNum);
 	f << "\t</node_infos>\n";
 	f << "</grid_schedule>\n";
 	f.close();
 }
 
 void Model::StagesCoresToXML(ofstream&f){
-	for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < stagesCores.size(); i++){
-		int packageNum = stagesCores[i].get<0>();
-		int tBegin = stagesCores[i].get<1>() * delta;
-		int coresCount = stagesCores[i].get<2>().size();
-		vector <int> cores = stagesCores[i].get<2>();
+	int usedNumsIndex = 0;
+	currentWfNum = usedNums[usedNumsIndex];
+	int currentWfPackage = 0;
+	for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < allStagesCores.size(); i++){
+		int packageNum = allStagesCores[i].get<0>();
+		int tBegin = allStagesCores[i].get<1>() * delta;
+		int coresCount = allStagesCores[i].get<2>().size();
+		vector <int> cores = allStagesCores[i].get<2>();
 		int type = -1;
 		int currBeginIndex = 0;
 		for (int j = 0; j < Resources.size(); j++){
@@ -688,11 +810,12 @@ void Model::StagesCoresToXML(ofstream&f){
 			}
 			currBeginIndex += Resources[j]->GetCoresCount();
 		}
-		double execTime = Workflows[0]->GetExecTime(packageNum,type,coresCount);
+		// correct
+		double execTime = Workflows[currentWfNum]->GetExecTime(packageNum,type,coresCount);
 		int tEnd = tBegin + execTime;
 		for (int j = 0; j < cores.size(); j++){
 			f << "\t\t<node_statistics>" << endl;
-			f << "\t\t	<node_property name=\"id\" value=\""<< packageNum+1 <<"\"/>" << endl;
+			f << "\t\t	<node_property name=\"id\" value=\"" << packageNum+1 <<"\"/>" << endl;
 			f << "\t\t	<node_property name=\"type\" value=\"computation\"/>" << endl;
 			f << "\t\t	<node_property name=\"start_time\" value=\"" << tBegin << "\"/>" << endl;
 			f << "\t\t	<node_property name=\"end_time\" value=\"" << tEnd << "\"/>" << endl;
@@ -705,8 +828,49 @@ void Model::StagesCoresToXML(ofstream&f){
 			f << "\t\t	</configuration>" << endl;
 			f << "\t\t</node_statistics>" << endl;
 		}
+		currentWfPackage++;
+		if (currentWfPackage == Workflows[currentWfNum]->GetPackageCount()){
+			currentWfPackage = 0;
+			usedNumsIndex++;
+			currentWfNum = usedNums[usedNumsIndex];
+		}
 	}
 }
+
+void Model::StagesCoresToXML(ofstream&f, int currentWfNum){
+	int currentWfPackage = 0;
+	for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < stagesCores.size(); i++){
+		int packageNum = stagesCores[i].get<0>();
+		int tBegin = stagesCores[i].get<1>() * delta;
+		int coresCount = stagesCores[i].get<2>().size();
+		vector <int> cores = stagesCores[i].get<2>();
+		int type = GetResourceType(cores[0]);
+		int currBeginIndex = 0;
+		
+		// correct
+		cout << "type=" << type << " cores = " << coresCount << " package = " << packageNum << " ";
+		double execTime = Workflows[currentWfNum]->GetExecTime(packageNum,type+1,coresCount);
+		cout << execTime << endl;
+		int tEnd = tBegin + execTime;
+		for (int j = 0; j < cores.size(); j++){
+			f << "\t\t<node_statistics>" << endl;
+			f << "\t\t	<node_property name=\"id\" value=\"" << packageNum+1 <<"\"/>" << endl;
+			f << "\t\t	<node_property name=\"type\" value=\"computation\"/>" << endl;
+			f << "\t\t	<node_property name=\"start_time\" value=\"" << tBegin << "\"/>" << endl;
+			f << "\t\t	<node_property name=\"end_time\" value=\"" << tEnd << "\"/>" << endl;
+			f << "\t\t	<configuration>" << endl;
+			f << "\t\t	  <conf_property name=\"cluster_id\" value=\"0\"/>" << endl;
+			f << "\t\t	  <conf_property name=\"host_nb\" value=\"1\"/>" << endl;
+			f << "\t\t	  <host_lists>" << endl;
+			f << "\t\t	    <hosts start=\"" << cores[j] << "\" nb=\"1\"/>" << endl;
+			f << "\t\t	  </host_lists>" << endl;
+			f << "\t\t	</configuration>" << endl;
+			f << "\t\t</node_statistics>" << endl;
+		}
+		currentWfPackage++;
+	}
+}
+
 
 void Model::MetaXMLInfo(ofstream &f){
 	int hosts = 0;
@@ -764,18 +928,23 @@ void Model::BusyToXML(ofstream &f){
 	}
 }
 
+void Model::BackBellmanProcedure(){
+	for (int i = stages-1; i >=0; i--)
+		GetStageInformation(i);
+}
 
 // stages are numbered fom zero
 void Model::GetStageInformation(int stage){
 	int tbegin = stage * delta;
-	string fname = "stage" + to_string((long long)stage+1) + ".txt";
-	ofstream f(fname);
+	/*string fname = "stage" + to_string((long long)stage+1) + ".txt";
+	ofstream f(fname);*/
 	int num = 0; // number of correct states for this stage
 	// for all states
 	int statesCount = GetStatesCount();
+	FullInfo[stage].resize(statesCount);
 	for (int i = 0; i < statesCount; i++){
-		f << "State " << i << endl;
-		Workflows[0]->PrintState(states[i],f);
+		//f << "State " << i << endl;
+		// Workflows[wfNum]->PrintState(states[i],f);
 		int uopt = 0;
 		double maxEff = 0.0; 
 		vector<vector<pair<double, unsigned int>>> timeCoresPerType;
@@ -808,15 +977,15 @@ void Model::GetStageInformation(int stage){
 			}
 		}
 		FullInfo[stage][i] = make_pair(uopt, maxEff);
-		f << uopt << " ";
-		Workflows[0]->PrintControl(controls[i][uopt], f);
-		f << nextStateNumbers[i][uopt] << " ";
-		Workflows[0]->PrintState(states[nextStateNumbers[i][uopt]], f);
+		//f << uopt << " ";
+		//Workflows[0]->PrintControl(controls[i][uopt], f);
+		//f << nextStateNumbers[i][uopt] << " ";
+		//Workflows[0]->PrintState(states[nextStateNumbers[i][uopt]], f);
 		if (stage==0) break;
 	}		
 	
 	//cout << "Stage " << stage << " has " << num << " states." << endl;
-	f.close();
+	//f.close();
 
 }
 
@@ -840,7 +1009,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 	try {
 		string errMsg = "timeCoresPerType has wrong size";
 		if (timeCoresPerType.size()!=Resources.size()) throw UserException(errMsg);
-		Workflows[0]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType);
+		Workflows[currentWfNum]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType);
 		vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 		unsigned int typeIndex = 0;
 		unsigned int inc = 0;
@@ -873,7 +1042,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType){
 	vector <vector<int>> stageUsedNums;
 	vector <pair<vector<int>,vector<int>>> fullUsedNums;
-	Workflows[0]->SetTimesCoresForState(states[state], timeCoresPerType);
+	Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType);
 	vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 	unsigned int typeIndex = 0;
 	for (;tCit != timeCoresPerType.end(); tCit++){
@@ -887,7 +1056,73 @@ bool Model::CheckState (const unsigned int state, const unsigned int stage, time
 }
 
 
+void Model::ReadData(int wfNum){
+	try{
+		if (wfNum < 0 || wfNum > Workflows.size()-1) throw UserException("ReadData(): wrong wfNum");
+		int packages = Workflows[wfNum]->GetPackageCount();
+		string name = "wf" + to_string((long long)wfNum+1) + "_controls.txt";
+		ifstream f(name);
+		if (f.fail()) throw UserException("ReadData(): file " + name + "cannot be open");
+		int line = 0;
+		string errEarlyEnd = "ReadData(): early file end";
+		string s;
+		getline(f,s);
+		line++;
+		if (f.eof()) throw UserException(errEarlyEnd);
+		if (s.find("State")==string::npos) throw UserException("ReadData(): wrong format at line " + to_string((long long)line));
+		while (!f.eof()){
+			// read state
+			getline(f,s);
+			line++;
+			if (f.eof()) throw UserException(errEarlyEnd);
+			istringstream iss(s);
+			vector <int> state;
+			for (int i = 0; i < packages; i++){
+				iss >> s;
+				state.push_back(stoi(s));
+			}
+			states.push_back(state);
+			getline(f,s);
+			line++;
+			if (f.eof()) throw UserException(errEarlyEnd);
+			// reading controls and next states
+			vector <vector<int>> oneStateControls;
+			vector<int> nextStates;
+			do 
+			{
+				iss.str(s);
+				iss.clear();
+				vector <int> control;
+				for (int i = 0; i < packages; i++){
+					iss >> s;
+					control.push_back(stoi(s));
+				}
+				oneStateControls.push_back(control);
 
+				getline(f,s);
+				line++;
+				if (f.eof()) throw UserException(errEarlyEnd);
+				nextStates.push_back(stoi(s));
+
+				getline(f,s);
+				line++;
+
+			} while (s.find("State")==string::npos && !f.eof());
+			controls.push_back(oneStateControls);
+			nextStateNumbers.push_back(nextStates);
+		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+	catch (std::exception& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
 
 Model::~Model(void)
 {

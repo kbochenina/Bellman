@@ -346,25 +346,30 @@ void Workflow::PrintControls(vector <vector<int>> &packagesStates, vector <vecto
 			f << " ";
 		}
 		// print state
-		for (unsigned int j = 0; j < packagesStates[i].size(); j++){
+		/*for (unsigned int j = 0; j < packagesStates[i].size(); j++){
 			packages[j]->PrintState(f, packagesStates[i][j]);
 			f << " ";
-		}
+		}*/
 		f << endl;
 		
 		for (unsigned int j = 0; j < controls[i].size(); j++){
 			for (unsigned int k = 0; k < controls[i][j].size(); k++){
+				f << controls[i][j][k] << " ";
+			}
+
+			/*for (unsigned int k = 0; k < controls[i][j].size(); k++){
 				int control = controls[i][j][k];
 				if (control == -1) f << "(0 0)";
 				else f << "(" << _reftypesCores[control].first << " " << _reftypesCores[control].second << ")";
-			}
+			}*/
 			f << endl;
-			for (unsigned int k = 0; k < packagesStates[nextStateNumbers[i][j]].size(); k++){
-				f << nextStateNumbers[i][j] << " ";
+			f << nextStateNumbers[i][j] << " ";
+			/*for (unsigned int k = 0; k < packagesStates[nextStateNumbers[i][j]].size(); k++){
+				
 				packages[k]->PrintState(f, packagesStates[nextStateNumbers[i][j]][k]);
 				f << " ";
-		}
-		f << endl;
+			}*/
+			f << endl;
 		}
 
 	}
@@ -469,4 +474,16 @@ void Workflow::SetTimesCoresForControl(const vector<int>&state, const vector<int
 
 double Workflow::GetLevel(int pNum, int state){
 	return packages[pNum]->GetLevel(state);
+}
+
+double Workflow::GetExecTime(int pNum, int type, int cores) {
+	try{
+		if (pNum < 0 || pNum > packages.size()-1) throw UserException("Workflow::GetExecTime() : wrong packageNum " + to_string((long long)pNum));
+		return packages[pNum]->GetExecTime(type, cores);
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }

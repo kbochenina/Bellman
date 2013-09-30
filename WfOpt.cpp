@@ -54,7 +54,7 @@ int _tmain(int argc, wchar_t** argv)
 		ex.close();*/
 		cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
 		cout << endl;
-		system("pause");
+		
 	}
 	catch(const string msg){
 		cout << msg << endl;

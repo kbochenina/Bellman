@@ -21,7 +21,7 @@ class Workflow{
 	Workflow (std::vector <Package*>, std::vector <std::vector <int>>, int, vector <ResourceType*>&, vector <pair<unsigned short, unsigned short>> &);
 	std::vector <Package*> GetPackages() {return packages;} // is useful??
 	int GetPackageCount(){return packages.size();}
-	double GetExecTime(int pNum, int type, int cores) {return packages[pNum]->GetExecTime(type, cores);}
+	double GetExecTime(int pNum, int type, int cores);
 	std::vector<int> GetCoresCount(int pNum) {return packages[pNum]->GetCoresCount();}
 	// pNum begins from ZERO
 	bool IsPackageInit(int pNum);

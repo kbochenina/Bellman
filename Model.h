@@ -20,11 +20,15 @@ class Model
 	vector <Workflow*> Workflows;
 	std::vector <ResourceType*> Resources;
 	vector <tuple<int,int,vector<int>>> stagesCores; // (package,stage, core1, core2,...) for package1, (stage, core1, core2, ...) for package 2...
+	vector <tuple<int,int,vector<int>>> allStagesCores; // 
 	std::vector <int> forcedBricks;
 	bool canExecuteOnDiffResources; // if true one package can execute on some cores of different resources of one type
 	double koeff;
 	vector <pair<unsigned short, unsigned short>> typesCores;
+	int fullCoresCount;
 	string resFileName;
+	int currentWfNum;
+	vector <int> usedNums;
 	// for each state: vector of controls. Each package control can be -1 (if no resources used)
 	// or index in typesCores
 	vector <vector<vector<int>>> controls; 
@@ -46,18 +50,25 @@ class Model
 	}
 	int GetStatesCount() {return states.size();}
 	double GetEfficiency(const int & stage, const timeCore& currentTC);
-	void BellmanToXML();
+	void BellmanToXML(bool isOne);
 	void MetaXMLInfo(ofstream &f);
 	void BusyToXML(ofstream &f);
 	void StagesCoresToXML(ofstream&f);
+	void ReadData(int wfNum);
+	void GetStageInformation(int stage);
+	double DirectBellman(int wfNum);
+	void BackBellmanProcedure();
+	void AddDiaps(int beginIndex, int wfNum);
+	int GetResourceType(int number);
+	int GetResourceTypeBeginIndex(int type);
+	void Model::StagesCoresToXML(ofstream&f, int currentWfNum);
 public:
 	Model(){}
 	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO
 	void Init (string resFile, string wfFile, string settingsFile, string xmlFile);
 	void InitSettings(string);
 	double Greedy(int uopt, double currentEff);
-	void GetStageInformation(int stage);
-	void DirectBellman();
+	
 	~Model(void);
 };
 

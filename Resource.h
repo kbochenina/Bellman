@@ -10,8 +10,9 @@ class Resource{
 	unsigned int coresCount;
 	std::vector<unsigned int> forcedBricks;
 	std::map <int,std::vector<std::pair<int,int>>> busyIntervals; // (coreNum), (tBegin, tEnd), (tbegin, tend) for busy intervals
+	std::map <int,std::vector<std::pair<int,int>>> initBusyIntervals;
 	std::map <int,std::vector<std::pair<int,int>>> currentBusyIntervals;
-public:
+	public:
 	Resource(int,int,std::map <int,std::vector<std::pair<int,int>>>);
 	std::map <int,std::vector<std::pair<int,int>>>* GetBusyIntervals(){return &busyIntervals;}
 	int GetCoresCount(){return coresCount;}
@@ -27,4 +28,7 @@ public:
 	void AddForcedBricks(const std::vector<unsigned int>&);
 	std::vector <unsigned int> GetNextStage(const std::vector<unsigned int> &);
 	std::vector <unsigned int> GetForcedBricks(){return forcedBricks;}
+	void AddDiap(int stageBegin, int stageCount, int coreNum);
+	void SetInitBusyIntervals(){busyIntervals = initBusyIntervals;}
+	
 };
