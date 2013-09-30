@@ -752,7 +752,8 @@ double Model::DirectBellman(int wfNum){
 			int uopt = FullInfo[i][currentNum].first;
 			Workflows[wfNum]->PrintState(states[currentNum], f);
 			Workflows[wfNum]->PrintControl(controls[currentNum][uopt], f);
-			CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums);
+			if (CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums)==false) 
+				throw UserException("DirectBellman() : cannot find a control");
 			int fullUsedNumIndex = 0;
 			string errMsgIndex = "DirectBellman(): Wrong fullUsedNumIndex value",
 				errMsgSize = "DirectBellman() :Wrong fullUsedNums size()";
@@ -952,9 +953,11 @@ void Model::GetStageInformation(int stage){
 		vector<vector<int>> stageUsedNums;
 		// if we have right core number for this state
 		if (CheckState(i, stage, timeCoresPerType)) {
+			vector <pair<vector<int>,vector<int>>> stateUsedNums = fullUsedNums;
 			vector<vector<int>>::const_iterator controlsIt = controls[i].begin();
 			int controlIndex = 0;
 			for (; controlsIt!=controls[i].end(); controlsIt++){
+				fullUsedNums = stateUsedNums;
 				timeCore currentTimeCore = timeCoresPerType;
 				if (CheckControl(i, controlIndex, stage, currentTimeCore,false, stageUsedNums)){
 					// if it is the last period
@@ -972,6 +975,7 @@ void Model::GetStageInformation(int stage){
 							uopt = controlIndex;
 						}
 					}
+					fullUsedNums.clear();
 				}
 				controlIndex++;
 			}
@@ -1041,7 +1045,6 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 
 bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType){
 	vector <vector<int>> stageUsedNums;
-	vector <pair<vector<int>,vector<int>>> fullUsedNums;
 	Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType);
 	vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
 	unsigned int typeIndex = 0;
