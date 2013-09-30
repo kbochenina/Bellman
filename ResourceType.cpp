@@ -245,3 +245,24 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	return true;
 }
 
+void ResourceType::AddDiaps(int stageBegin, int stageCount, vector<int>& cores){
+	for (vector<int>::iterator it = cores.begin(); it!= cores.end(); it++){
+		int resourceIndex = GetResourceIndex(*it);
+		int coreNum = *it - resourceIndex * numCoresPerOneRes;
+		resources[resourceIndex].AddDiap(stageBegin, stageCount, coreNum);
+	}
+	SetFreeTimeEnds();
+}
+
+int ResourceType::GetResourceIndex(int core){
+	int current = 0, resIndex = 0;
+	while (core >= resIndex * numCoresPerOneRes)
+		resIndex++;
+	return resIndex-1;
+}
+
+void ResourceType::SetInitBusyIntervals(){
+	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
+		it->SetInitBusyIntervals();
+}
+

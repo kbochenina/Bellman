@@ -15,7 +15,9 @@ class ResourceType
 	std::vector<std::vector <int>> allCoresFreeTimes; // (stageNum, (core1TimeEnd, core2TimeEnd...,coreN))
 	std::vector <Resource> resources;
 	int GetNearestBorderForOneCore(const unsigned int &core, const unsigned int &stage);
+	int GetResourceIndex(int core);
 public:
+	
 	ResourceType(int t, std::vector<Resource> r, double p): type(t), resources(r), perf(p){
 		if (r.size()!=0) numCoresPerOneRes = r[0].GetCoresCount();
 	};
@@ -39,5 +41,7 @@ public:
 		const std::vector <int>& addForcedBricks, std::vector <unsigned int>&, std::vector <unsigned int>&, std::vector<std::vector<int>>&); // if return 0 then no possible combinations
 	void SetChildForcedBricks(){for (unsigned int i = 0; i < resources.size(); i++) resources[i].SetForcedBricks();}
 	std::vector<int> GetForcedNumbers(const int &execTime, const int &stageBegin, int numCores = 1);
+	void AddDiaps(int stageBegin, int stageCount, vector<int>& cores);
+	void SetInitBusyIntervals();
 };
 

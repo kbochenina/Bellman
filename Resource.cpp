@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <math.h>
+#include "UserException.h"
 using namespace std;
 
 typedef map <int,vector<pair<int,int>>>::iterator iInterval;
@@ -30,7 +31,7 @@ private:
 struct findIntersects{
 	explicit findIntersects(int n): number(n){}
 	inline bool operator () (pair<int,int> obj){
-		return (obj.first <= number && obj.second >=number);
+		return (obj.first < number && obj.second > number);
 	}
 private:
 	int number;
@@ -128,6 +129,7 @@ Resource::Resource(int n,int c, map <int,vector<pair<int,int>>> b)
 	coresCount = c;
 	busyIntervals = b;
 	currentBusyIntervals = busyIntervals;
+	initBusyIntervals = busyIntervals;
 	for (unsigned int i = 0; i < coresCount; i++) forcedBricks.push_back(0);
 }
 
@@ -323,4 +325,21 @@ int Resource::GetPlacement(const int& tBegin, const int& execTime, const unsigne
 		}
 	}
 	return distance;
+}
+
+void Resource::AddDiap(int stageBegin, int stageCount, int coreNum){
+	try{
+		if (coreNum < 0 || coreNum > coresCount - 1) throw UserException("Resource::AddDiap() : wrong core number" + to_string((long long)coreNum));
+		int tbegin = stageBegin*delta;
+		int tend = (stageBegin + stageCount) * delta;
+		pair <int,int> newDiap;
+		newDiap.first = tbegin; newDiap.second = tend;
+		busyIntervals[coreNum+1].push_back(newDiap);
+		sort(busyIntervals[coreNum+1].begin(), busyIntervals[coreNum+1].end(), busyIntervalsAsc);
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
