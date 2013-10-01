@@ -4,6 +4,7 @@
 
 extern int T, delta, stages;
 extern vector<int> stageBorders;
+extern bool canExecuteOnDiffResources;
 
 class ResourceType
 {
@@ -24,8 +25,8 @@ public:
 	~ResourceType(void);
 	int GetResourceCount(){return resources.size();}
 	Resource& operator[](const int index){return resources[index];}
-	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources, 
-		vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>&);
+	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
+		vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>&, bool debugFlag);
 	void SetInitLastVals(unsigned short i, unsigned short l) {initVal = i; lastVal = l;}
 	unsigned short GetInitVal(){return initVal;}
 	void SetFreeTimeEnds(); // if we want to set default free time ends;

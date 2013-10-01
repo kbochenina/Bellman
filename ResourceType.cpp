@@ -184,12 +184,26 @@ int ResourceType::GetNearestBorderForOneCore(const unsigned int &core, const uns
 	return currentStage*delta + allCoresFreeTimes[currentStage][core];
 }
 
-bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage, bool canExecuteOnDiffResources, 
-	vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>& stageUsedNums){
+bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
+	vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>& stageUsedNums, bool debugFlag){
 	vector <int> usedNums;
 	vector <int>& coreTimes = allCoresFreeTimes[stage];
 	vector <int> nearestBorders;
 	for (int i = 0; i < GetCoresCount(); i++) nearestBorders.push_back(GetNearestBorderForOneCore(i,stage));
+	/*if (debugFlag){
+		ofstream f("checkd.txt", ios::app);
+		f << "---------------------------------------------------------------------" << endl;
+		f << "Resource type: " << type << endl;
+		f << "nearestBorders: ";
+		for (vector<int>::iterator it = nearestBorders.begin(); it!= nearestBorders.end(); it++)
+			f << *it << " ";
+		f << endl;
+		f << "timeCores: ";
+		for (vector<pair<double,unsigned int>>::const_iterator it = timeCores.begin(); it!= timeCores.end(); it++)
+			f << "(" << it->first << " " << it->second << ")";
+		f << endl;
+		f.close();
+	}*/
 	//if (isUsedNumsNeeded){
 		// copy to usedNums busy cores received on previous stages
 	vector <pair<vector<int>,vector<int>>>::iterator fIt = fullUsedNums.begin();
@@ -197,6 +211,15 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		if (find(fIt->first.begin(),fIt->first.end(),stage)!=fIt->first.end())
 			copy(fIt->second.begin(), fIt->second.end(),back_inserter(usedNums));
 	}
+	/*if (debugFlag){
+		ofstream f("checkd.txt", ios::app);
+		f << "usedNums: ";
+		for (vector<int>::iterator it = usedNums.begin(); it!= usedNums.end(); it++)
+			f << *it << " ";
+		f << endl;
+		f.close();
+		
+	}*/
 	//}
 	// for each packages
 	for (unsigned int i = 0; i < timeCores.size(); i++){
@@ -236,6 +259,15 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		vector <int> numStagesVec;
 		for (int j = 0; j < numStages; j++) numStagesVec.push_back(stage+j);
 		fullUsedNums.push_back(make_pair(numStagesVec,usedNumsForOnePackage));
+
+		/*if (debugFlag){
+			ofstream f("checkd.txt", ios::app);
+			f << "usedNums after distribution: ";
+			for (vector<int>::iterator it = usedNumsForOnePackage.begin(); it!= usedNumsForOnePackage.end(); it++)
+				f << *it << " ";
+			f << endl;
+			f.close();
+		}*/
 
 		if (isUsedNumsNeeded) {
 			stageUsedNums.push_back(usedNumsForOnePackage);

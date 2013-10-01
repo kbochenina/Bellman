@@ -8,6 +8,7 @@
 	int T, delta, stages;
 	ofstream ex;
 	vector<int> stageBorders;
+	bool canExecuteOnDiffResources;
 	
 int _tmain(int argc, wchar_t** argv)
 {

@@ -13,6 +13,7 @@ typedef vector<vector<pair<double, unsigned int>>> timeCore;
 
 extern int T, delta, stages;
 extern vector<int> stageBorders;
+extern bool canExecuteOnDiffResources; // if true one package can execute on some cores of different resources of one type
 
 class Model
 {
@@ -22,7 +23,6 @@ class Model
 	vector <tuple<int,int,vector<int>>> stagesCores; // (package,stage, core1, core2,...) for package1, (stage, core1, core2, ...) for package 2...
 	vector <tuple<int,int,vector<int>>> allStagesCores; // 
 	std::vector <int> forcedBricks;
-	bool canExecuteOnDiffResources; // if true one package can execute on some cores of different resources of one type
 	double koeff;
 	vector <pair<unsigned short, unsigned short>> typesCores;
 	int fullCoresCount;
@@ -42,7 +42,7 @@ class Model
 	void InitWorkflows(string);
 	bool CheckState (const unsigned int state, const unsigned int stage,timeCore&);
 	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, 
-		bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums);
+		bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums, bool debugFlag);
 	void SetForcedBricks();
 	double efficiencyFunction(double x) { return (koeff*(1-x)); }
 	double EfficiencyByPeriod(int busyCores, int t1, int t2){
