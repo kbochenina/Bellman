@@ -576,6 +576,8 @@ void Model::InitResources(string f){
 // firstWfNum from ZERO
 void Model::StagedScheme(int firstWfNum){
 	try{
+		ofstream res("staged_schemeRes.txt");
+		if (res.fail()) throw UserException("Unable to create res file");
 		vector <int>usedWFNums;
 		string wrongFirstNum = "StagedScheme(): wrong firstWFNum";
 		if (firstWfNum < 0 || firstWfNum > Workflows.size()-1) throw UserException(wrongFirstNum);
@@ -608,6 +610,14 @@ void Model::StagedScheme(int firstWfNum){
 				}
 				states.clear(); controls.clear(); nextStateNumbers.clear(); fullUsedNums.clear(); stagesCores.clear();
 		}
+		res << "WF " << firstWfNum << endl;
+		for (vector <tuple<int,int,vector<int>>>::iterator it = allStagesCores.begin(); it!= allStagesCores.end(); it++){
+			res << "(" << it->get<0>() << " " << it->get<1>() << " (";
+			for (vector<int>::iterator it2 = it->get<2>().begin(); it2 != it->get<2>().end(); it2++)
+				res << *it2 << " ";
+			res << "))";
+		}
+		res << endl;
 		vector <tuple<int,int,vector<int>>> bestStagesCores;
 		while (usedWFNums.size() != Workflows.size()){
 			double maxEff = 0.0;
@@ -615,6 +625,7 @@ void Model::StagedScheme(int firstWfNum){
 			for (vector<Workflow*>::size_type i = 0; i < Workflows.size(); i++){
 				if (find(usedWFNums.begin(), usedWFNums.end(), i)== usedWFNums.end()){
 					currentWfNum = i;
+					cout << "currentfNum = " << currentWfNum << endl;
 					ReadData(i);
 					BackBellmanProcedure();
 					double currentEff = DirectBellman(i);
@@ -632,6 +643,14 @@ void Model::StagedScheme(int firstWfNum){
 			usedNums = usedWFNums;
 			stagesCores = bestStagesCores;
 			currentWfNum = bestWfNum;
+			res << "WF " << bestWfNum << endl;
+			for (vector <tuple<int,int,vector<int>>>::iterator it = bestStagesCores.begin(); it!= bestStagesCores.end(); it++){
+				res << "(" << it->get<0>() << " " << it->get<1>() << " (";
+				for (vector<int>::iterator it2 = it->get<2>().begin(); it2 != it->get<2>().end(); it2++)
+					res << *it2 << " ";
+				res << "))";
+			}
+			res << endl;
 			BellmanToXML(true);
 			std::system("pause");
 			AddDiaps(diapBegin, bestWfNum);
@@ -649,7 +668,7 @@ void Model::StagedScheme(int firstWfNum){
 
 		//int t = clock();
 		//cout << "Time of reading data " << (clock()-t)/1000.0 << "sec" << endl;
-
+		res.close();
 		
 	}
 	catch (UserException& e){
@@ -752,7 +771,7 @@ double Model::DirectBellman(int wfNum){
 			int uopt = FullInfo[i][currentNum].first;
 			Workflows[wfNum]->PrintState(states[currentNum], f);
 			Workflows[wfNum]->PrintControl(controls[currentNum][uopt], f);
-			if (CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums)==false) 
+			if (CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums, false)==false) 
 				throw UserException("DirectBellman() : cannot find a control");
 			int fullUsedNumIndex = 0;
 			string errMsgIndex = "DirectBellman(): Wrong fullUsedNumIndex value",
@@ -937,15 +956,16 @@ void Model::BackBellmanProcedure(){
 // stages are numbered fom zero
 void Model::GetStageInformation(int stage){
 	int tbegin = stage * delta;
-	/*string fname = "stage" + to_string((long long)stage+1) + ".txt";
-	ofstream f(fname);*/
+	string fname = "stage" + to_string((long long)stage+1) + ".txt";
+	ofstream f(fname);
+	bool debugFlag = false;
 	int num = 0; // number of correct states for this stage
 	// for all states
 	int statesCount = GetStatesCount();
 	FullInfo[stage].resize(statesCount);
 	for (int i = 0; i < statesCount; i++){
-		//f << "State " << i << endl;
-		// Workflows[wfNum]->PrintState(states[i],f);
+		/*f << "State " << i << endl;
+		Workflows[currentWfNum]->PrintState(states[i],f);*/
 		int uopt = 0;
 		double maxEff = 0.0; 
 		vector<vector<pair<double, unsigned int>>> timeCoresPerType;
@@ -959,8 +979,34 @@ void Model::GetStageInformation(int stage){
 			for (; controlsIt!=controls[i].end(); controlsIt++){
 				fullUsedNums = stateUsedNums;
 				timeCore currentTimeCore = timeCoresPerType;
-				if (CheckControl(i, controlIndex, stage, currentTimeCore,false, stageUsedNums)){
+				if (currentWfNum == 3 && stage == 1 && i == 2 && controlIndex == 68) debugFlag = true;
+				if (CheckControl(i, controlIndex, stage, currentTimeCore,true, stageUsedNums, debugFlag)){
 					// if it is the last period
+					if (currentWfNum == 3 && stage == 1 && i == 2 && controlIndex == 68){
+						ofstream d("debugInfo.txt", ios::app);
+						Workflows[currentWfNum]->PrintState(states[i],d);
+						Workflows[currentWfNum]->PrintControl(controls[i][68], d);
+						d << "Current time core:";
+						d << "After checking: " << endl;
+						d << "stateUsedNums: " << endl;
+						if (fullUsedNums.size()==0) d << "zero" << endl;
+						vector <pair<vector<int>,vector<int>>>::iterator it = fullUsedNums.begin();
+						for (;it!=fullUsedNums.end(); it++){
+							vector <int>::iterator i1 = it->first.begin();
+							d << "(";
+							for (;i1!=it->first.end(); i1++){
+								d << *i1 << " ";
+							}
+							d << ")\n";
+							i1 = it->second.begin();
+							d << "(";
+							for (;i1!=it->second.end(); i1++){
+								d << *i1 << " ";
+							}
+							d << ")\n";
+						}
+						d.close();
+					}
 					double currEff = GetEfficiency(stage, currentTimeCore);
 					if (stage == stages-1){
 						if (currEff > maxEff){
@@ -981,16 +1027,16 @@ void Model::GetStageInformation(int stage){
 			}
 		}
 		FullInfo[stage][i] = make_pair(uopt, maxEff);
-		//f << uopt << " ";
-		//Workflows[0]->PrintControl(controls[i][uopt], f);
-		//f << nextStateNumbers[i][uopt] << " ";
-		//Workflows[0]->PrintState(states[nextStateNumbers[i][uopt]], f);
+		/*f << uopt << " ";
+		Workflows[currentWfNum]->PrintControl(controls[i][uopt], f);
+		f << nextStateNumbers[i][uopt] << " ";
+		Workflows[currentWfNum]->PrintState(states[nextStateNumbers[i][uopt]], f);*/
 		if (stage==0) break;
 	}		
 	
 	//cout << "Stage " << stage << " has " << num << " states." << endl;
-	//f.close();
-
+	f.close();
+	
 }
 
 double Model::GetEfficiency(const int & stage, const timeCore& currentTC){
@@ -1009,7 +1055,7 @@ double Model::GetEfficiency(const int & stage, const timeCore& currentTC){
 }
 
 bool Model::CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage,
-	timeCore& timeCoresPerType, bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums){
+	timeCore& timeCoresPerType, bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums, bool debugFlag){
 	try {
 		string errMsg = "timeCoresPerType has wrong size";
 		if (timeCoresPerType.size()!=Resources.size()) throw UserException(errMsg);
@@ -1020,8 +1066,8 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 		for (;tCit != timeCoresPerType.end(); tCit++){
 			vector <vector<int>> usedNums; 
 			if (tCit->size()!=0){
-				if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources,
-					fullUsedNums, isUsedNumsNeeded, usedNums)==false) 
+				if (Resources[typeIndex]->Check(*tCit, stage, 
+					fullUsedNums, isUsedNumsNeeded, usedNums, debugFlag)==false) 
 					return false;
 			}
 			if (isUsedNumsNeeded){
@@ -1050,7 +1096,7 @@ bool Model::CheckState (const unsigned int state, const unsigned int stage, time
 	unsigned int typeIndex = 0;
 	for (;tCit != timeCoresPerType.end(); tCit++){
 		if (tCit->size()!=0){
-			if (Resources[typeIndex]->Check(*tCit, stage, canExecuteOnDiffResources, fullUsedNums, false, stageUsedNums)==false) 
+			if (Resources[typeIndex]->Check(*tCit, stage, fullUsedNums, false, stageUsedNums, false)==false) 
 				return false;
 		}
 		typeIndex++;	
