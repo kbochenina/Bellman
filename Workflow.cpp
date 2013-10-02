@@ -443,16 +443,30 @@ bool Workflow::IsPackageInit(int pNum){
 	return flag;
 }
 
-void Workflow::SetTimesCoresForState(const vector<int>&state, vector<vector<pair<double, unsigned int>>>&timeCoresPerType){
-	vector <int>::const_iterator stateIt = state.begin();
-	unsigned int packageIndex = 0;
-	for (; stateIt!=state.end(); stateIt++){
-		unsigned int type = packages[packageIndex]->GetType(*stateIt);
-		if (type!=0){
-			timeCoresPerType[type-1].push_back(make_pair(packages[packageIndex]->GetPartialExecTime(*stateIt),
-				packages[packageIndex]->GetCore(*stateIt)));
+/*
+parameters:
+state - vector of packages states
+timeCoresPerType - out parameter
+packagesIndexesPerType - out parameter, array of types size which contains indexes of packages (from 0) executing on some type
+*/
+void Workflow::SetTimesCoresForState(const vector<int>&state, vector<vector<pair<double, unsigned int>>>&timeCoresPerType,
+	vector<vector<int>>& packagesIndexesPerType){
+	try{
+		vector <int>::const_iterator stateIt = state.begin();
+		unsigned int packageIndex = 0;
+		for (; stateIt!=state.end(); stateIt++){
+			unsigned int type = packages[packageIndex]->GetType(*stateIt);
+			if (type!=0){
+				timeCoresPerType[type-1].push_back(make_pair(packages[packageIndex]->GetExecTime(*stateIt),
+					packages[packageIndex]->GetCore(*stateIt)));
+			}
+			packageIndex++;
 		}
-		packageIndex++;
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
 	}
 }
 

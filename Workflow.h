@@ -39,7 +39,8 @@ class Workflow{
 	void PrintControls(vector <vector<int>> &, vector <vector<vector<int>>>&, vector <vector<int>>&);
 	void CheckForReadiness(vector <int>&nextState); // if all packages-predecessors are ready, state must be set to (0,0)
 	bool CheckState(int stateNumber, int stage);
-	void SetTimesCoresForState(const vector<int>&state, vector<vector<pair<double, unsigned int>>>&coresPerType);
+	void SetTimesCoresForState(const vector<int>&state, vector<vector<pair<double, unsigned int>>>&coresPerType, 
+		vector<vector<int>>& packagesIndexesPerType);
 	void SetTimesCoresForControl(const vector<int>&state, const vector<int>&control, vector<vector<pair<double, unsigned int>>>&coresPerType);
 	double GetLevel(int pNum, int state);
 	void PrintState(const vector <int>& state, ofstream &f);

@@ -15,7 +15,8 @@ public:
 	vector <int>& GetResourcesTypes() {return resourceTypes;}
 	vector <int>& GetCoreCounts() {return coreCounts;}
 	int GetResourcesTypesCount(){return resourceTypes.size();}
-	double GetExecTime(int type, int cores){ return execTime[std::make_pair(type,cores)];}
+	double GetExecTime(int type, int cores);
+	double GetExecTime(const unsigned int & stateNum);
 	double GetPartialExecTime(const unsigned int & stateNum);
 	std::vector<int> GetCoresCount(){return coreCounts;}
 	void SetIsInit(bool i) {isInit = i;}
