@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "Package.h"
-
+#include "UserException.h"
 
 Package::Package(int u, vector <int> &r, vector <int> &c, map <pair <int,int>, double> &e)
 {
@@ -14,12 +14,12 @@ double Package::GetLevel(unsigned int stateNum) {
 	try {
 		string errMsg = "Package::GetLevel() error: package " + to_string((long long)uid) + " - unable to get stateNum " +
 			to_string((long long)stateNum);
-		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw errMsg;
+		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw UserException(errMsg);
 		return packageStates[stateNum].get<2>();
 	}
-	catch(const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -28,12 +28,12 @@ int Package::GetCore(unsigned int stateNum) {
 	try {
 		string errMsg = "Package::GetCore() error: package " + to_string((long long)uid) + " - unable to get stateNum " +
 			to_string((long long)stateNum);
-		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw errMsg;
+		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw UserException(errMsg);
 		return packageStates[stateNum].get<1>();
 	}
-	catch(const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -42,12 +42,12 @@ int Package::GetType(unsigned int stateNum) {
 	try {
 		string errMsg = "Package::GetType() error: package " + to_string((long long)uid) + " - unable to get stateNum " +
 			to_string((long long)stateNum);
-		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw errMsg;
+		if (stateNum < 0 || stateNum > packageStates.size() - 1) throw UserException(errMsg);
 		return packageStates[stateNum].get<0>();
 	}
-	catch(const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -65,7 +65,7 @@ void Package::SetPackageStates(){
 				if (exIt == execTime.end()){
 					errTimeNotFound += "(type " + to_string(long long (resType)) + ", cores " +
 						to_string(long long (coreCount)) + ")";
-					throw errTimeNotFound;
+					throw UserException(errTimeNotFound);
 				}
 				
 				double &execTime = exIt->second;
@@ -76,9 +76,9 @@ void Package::SetPackageStates(){
 		}
 		packageStates.push_back(make_tuple(0, 0, 1));
 	}
-	catch(const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -91,7 +91,7 @@ void Package::PrintState(ofstream & f, const int &state){
 int Package::GetNextStateNum(unsigned int currentStateNum, int controlType, int controlCore){
 	try{
 		string errCurrentStateNum = "Package::GetNextStateNum() error, wrong current state num";
-		if (currentStateNum < 0 || currentStateNum > packageStates.size()-1) throw errCurrentStateNum;
+		if (currentStateNum < 0 || currentStateNum > packageStates.size()-1) throw UserException(errCurrentStateNum);
 		tuple <int,int, double> currentState = packageStates[currentStateNum];
 		int currentType = currentState.get<0>();
 		if (currentType==-1) return currentStateNum;
@@ -110,9 +110,26 @@ int Package::GetNextStateNum(unsigned int currentStateNum, int controlType, int 
 			return packageStates.size()-1;
 		}
 	}
-	catch(const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+double Package::GetExecTime(int type, int cores){
+	try{
+		std::pair<int,int> typeCore = make_pair(type,cores);
+		auto it = execTime.find(typeCore);
+		if (it==execTime.end()) 
+			throw UserException("Package::GetExecTime() : combination of type " + to_string((long long)type) + 
+			"  and cores " + to_string((long long)cores) + " not found");
+		return execTime[std::make_pair(type,cores)];
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -133,11 +150,15 @@ double Package::GetPartialExecTime(const unsigned int & stateNum){
 		if (diff < 0) return (execTime - delta * readyStages);
 		return (diff + (1-readyLevel)*execTime);
 	}
-	catch(const string msg){
-		cout << msg << endl;
-		system("pause");
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
 		exit(EXIT_FAILURE);
 	}
+}
+
+double Package::GetExecTime(const unsigned int & stateNum){
+	return GetExecTime(GetType(stateNum),GetCore(stateNum));
 }
 
 void Package::PrintExecTime(ofstream &f){

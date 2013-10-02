@@ -15,8 +15,10 @@ class ResourceType
 	std::vector <int> forcedBricks;
 	std::vector<std::vector <int>> allCoresFreeTimes; // (stageNum, (core1TimeEnd, core2TimeEnd...,coreN))
 	std::vector <Resource> resources;
-	int GetNearestBorderForOneCore(const unsigned int &core, const unsigned int &stage);
+	int GetRightBorderForOneCore(const unsigned int &core, const unsigned int &stage);
+	int GetLeftBorderForOneCore(const unsigned int &core, const unsigned int &stage);
 	int GetResourceIndex(int core);
+	bool IsDifferentResources(int core1, int core2);
 public:
 	
 	ResourceType(int t, std::vector<Resource> r, double p): type(t), resources(r), perf(p){
@@ -26,7 +28,7 @@ public:
 	int GetResourceCount(){return resources.size();}
 	Resource& operator[](const int index){return resources[index];}
 	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
-		vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>&, bool debugFlag);
+		vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState);
 	void SetInitLastVals(unsigned short i, unsigned short l) {initVal = i; lastVal = l;}
 	unsigned short GetInitVal(){return initVal;}
 	void SetFreeTimeEnds(); // if we want to set default free time ends;

@@ -970,43 +970,23 @@ void Model::GetStageInformation(int stage){
 		double maxEff = 0.0; 
 		vector<vector<pair<double, unsigned int>>> timeCoresPerType;
 		timeCoresPerType.resize(Resources.size());
+		vector <vector<int>> packagesCoresNums; // ((coreNum1, coreNum2,...)-package1, (coreNum1, coreNum2,...)-package2)
+		packagesCoresNums.resize(Workflows[currentWfNum]->GetPackageCount());
+
+		// possibly unused
 		vector<vector<int>> stageUsedNums;
+
 		// if we have right core number for this state
-		if (CheckState(i, stage, timeCoresPerType)) {
+		if (CheckState(i, stage, timeCoresPerType, packagesCoresNums)) {
 			vector <pair<vector<int>,vector<int>>> stateUsedNums = fullUsedNums;
 			vector<vector<int>>::const_iterator controlsIt = controls[i].begin();
 			int controlIndex = 0;
 			for (; controlsIt!=controls[i].end(); controlsIt++){
 				fullUsedNums = stateUsedNums;
 				timeCore currentTimeCore = timeCoresPerType;
-				if (currentWfNum == 3 && stage == 1 && i == 2 && controlIndex == 68) debugFlag = true;
 				if (CheckControl(i, controlIndex, stage, currentTimeCore,true, stageUsedNums, debugFlag)){
 					// if it is the last period
-					if (currentWfNum == 3 && stage == 1 && i == 2 && controlIndex == 68){
-						ofstream d("debugInfo.txt", ios::app);
-						Workflows[currentWfNum]->PrintState(states[i],d);
-						Workflows[currentWfNum]->PrintControl(controls[i][68], d);
-						d << "Current time core:";
-						d << "After checking: " << endl;
-						d << "stateUsedNums: " << endl;
-						if (fullUsedNums.size()==0) d << "zero" << endl;
-						vector <pair<vector<int>,vector<int>>>::iterator it = fullUsedNums.begin();
-						for (;it!=fullUsedNums.end(); it++){
-							vector <int>::iterator i1 = it->first.begin();
-							d << "(";
-							for (;i1!=it->first.end(); i1++){
-								d << *i1 << " ";
-							}
-							d << ")\n";
-							i1 = it->second.begin();
-							d << "(";
-							for (;i1!=it->second.end(); i1++){
-								d << *i1 << " ";
-							}
-							d << ")\n";
-						}
-						d.close();
-					}
+					
 					double currEff = GetEfficiency(stage, currentTimeCore);
 					if (stage == stages-1){
 						if (currEff > maxEff){
@@ -1067,7 +1047,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 			vector <vector<int>> usedNums; 
 			if (tCit->size()!=0){
 				if (Resources[typeIndex]->Check(*tCit, stage, 
-					fullUsedNums, isUsedNumsNeeded, usedNums, debugFlag)==false) 
+					usedNums, debugFlag)==false) 
 					return false;
 			}
 			if (isUsedNumsNeeded){
@@ -1088,17 +1068,41 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 		exit(EXIT_FAILURE);
 	}
 }
-
-bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType){
-	vector <vector<int>> stageUsedNums;
-	Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType);
+/* parameters:
+state - state number in states
+stage - current stage number, counted from 0
+timeCoresPerType - array of resources types size, each element is a vector of <execTime, numCores> for this type
+				   (received from current state)
+packagesCoresNums - out parameter, vector of concrete GLOBAL coreNums after concretising the state
+*/
+bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType, vector <vector<int>>& packagesCoreNums){
+	
+	vector <vector<int>> packagesIndexesPerType;
+	packagesIndexesPerType.resize(Resources.size());
+	Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType, packagesIndexesPerType);
 	vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
-	unsigned int typeIndex = 0;
+	unsigned int typeIndex = 0; 
+	unsigned int inc = 0;
 	for (;tCit != timeCoresPerType.end(); tCit++){
 		if (tCit->size()!=0){
-			if (Resources[typeIndex]->Check(*tCit, stage, fullUsedNums, false, stageUsedNums, false)==false) 
-				return false;
+			vector <vector<int>> oneTypeCoreNums;
+			// oneTypeCoreNums contains LOCAL core numbers for type typeindex
+			bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, true);
+			if (checkType == false) return checkType;
+			int packageIndex = 0;
+			// for each packages indexes for this type
+			for (vector<int>::iterator indexIt = packagesIndexesPerType[typeIndex].begin();
+				indexIt!=packagesIndexesPerType[typeIndex].end(); indexIt++){
+				auto coresIt = begin(oneTypeCoreNums[packageIndex]);
+				// find global core numbers
+				for (; coresIt!= end(oneTypeCoreNums[packageIndex]); coresIt++)
+					*coresIt += inc;
+				// concretizing the package
+				packagesCoreNums[*indexIt] = oneTypeCoreNums[packageIndex];
+				packageIndex++;
+			}
 		}
+		inc += Resources[typeIndex]->GetCoresCount();
 		typeIndex++;	
 	}
 	return true;

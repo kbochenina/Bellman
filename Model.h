@@ -40,7 +40,7 @@ class Model
 	// methods
 	void InitResources(string);
 	void InitWorkflows(string);
-	bool CheckState (const unsigned int state, const unsigned int stage,timeCore&);
+	bool CheckState (const unsigned int state, const unsigned int stage,timeCore& typeCoresPerType, vector <vector<int>>& packagesCoreNums);
 	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, 
 		bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums, bool debugFlag);
 	void SetForcedBricks();

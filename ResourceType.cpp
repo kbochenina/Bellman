@@ -177,105 +177,141 @@ void ResourceType::SetFreeTimeEnds(const vector <int>&addForcedBricks){
 
 }
 
-int ResourceType::GetNearestBorderForOneCore(const unsigned int &core, const unsigned int &stage){
+int ResourceType::GetRightBorderForOneCore(const unsigned int &core, const unsigned int &stage){
 	if (allCoresFreeTimes[stage][core]==0) return 0;
 	int currentStage = stage;
 	while (currentStage < stages-1 && allCoresFreeTimes[currentStage][core] == delta) currentStage++;
 	return currentStage*delta + allCoresFreeTimes[currentStage][core];
 }
 
+int  ResourceType::GetLeftBorderForOneCore(const unsigned int &core, const unsigned int &stage){
+	if (allCoresFreeTimes[stage][core]==0) return 0;
+	int currentStage = stage;
+	while (currentStage >= 0 && allCoresFreeTimes[currentStage][core] == delta) currentStage--;
+	return currentStage*delta;
+}
+
+bool ResourceType::IsDifferentResources(int core1, int core2){
+	return (core1/numCoresPerOneRes == core2/numCoresPerOneRes);
+}
+
+/*
+parameters:
+timeCores - pairs of (execTime, coreCount)
+stage - stage number
+oneTypeCoreNums - vector of timeCores.size() size which contains LOCAL core numbers for resource type after concretizing
+isCheckedForState = true if ResourceType::Check() is called in CheckState(). 
+This means than we must find stages of beginning for all packages and fullfill oneTypeCoreNums with state concretizing.
+Otherwise, oneTypeCoreNums contains concretized cores for state (they will be forbidden), and after concretizing controls
+values of oneTypeCoreNums replaced with cores for controls
+*/
 bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
-	vector <pair<vector<int>,vector<int>>>&fullUsedNums, bool isUsedNumsNeeded, vector<vector<int>>& stageUsedNums, bool debugFlag){
+	vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState){
+	// all used core numbers on this stage
 	vector <int> usedNums;
 	vector <int>& coreTimes = allCoresFreeTimes[stage];
-	vector <int> nearestBorders;
-	for (int i = 0; i < GetCoresCount(); i++) nearestBorders.push_back(GetNearestBorderForOneCore(i,stage));
-	/*if (debugFlag){
-		ofstream f("checkd.txt", ios::app);
-		f << "---------------------------------------------------------------------" << endl;
-		f << "Resource type: " << type << endl;
-		f << "nearestBorders: ";
-		for (vector<int>::iterator it = nearestBorders.begin(); it!= nearestBorders.end(); it++)
-			f << *it << " ";
-		f << endl;
-		f << "timeCores: ";
-		for (vector<pair<double,unsigned int>>::const_iterator it = timeCores.begin(); it!= timeCores.end(); it++)
-			f << "(" << it->first << " " << it->second << ")";
-		f << endl;
-		f.close();
-	}*/
-	//if (isUsedNumsNeeded){
-		// copy to usedNums busy cores received on previous stages
-	vector <pair<vector<int>,vector<int>>>::iterator fIt = fullUsedNums.begin();
-	for (;fIt!=fullUsedNums.end(); fIt++){
-		if (find(fIt->first.begin(),fIt->first.end(),stage)!=fIt->first.end())
-			copy(fIt->second.begin(), fIt->second.end(),back_inserter(usedNums));
+	vector <vector<int>> possiblePackagesCores;
+	possiblePackagesCores.resize(timeCores.size());
+	// indexes of packages in timeCores sorted in descending order by time
+	vector <int> packageIndexesTimeDesc;
+	
+	vector <int> rightBorders, leftBorders;
+	for (int i = 0; i < GetCoresCount(); i++) 
+		rightBorders.push_back(GetRightBorderForOneCore(i,stage));
+
+	
+	// cores for states are forbidden
+	if (!isCheckedForState) {
+		for (vector<vector<int>>::iterator it = begin(oneTypeCoreNums); it != end(oneTypeCoreNums); it++){
+			for (vector<int>::iterator val = begin(*it); val != end(*it); val++){
+				usedNums.push_back(*val);
+			}
+		}
 	}
-	/*if (debugFlag){
-		ofstream f("checkd.txt", ios::app);
-		f << "usedNums: ";
-		for (vector<int>::iterator it = usedNums.begin(); it!= usedNums.end(); it++)
-			f << *it << " ";
-		f << endl;
-		f.close();
-		
-	}*/
-	//}
+	else {
+		for (int i = 0; i < GetCoresCount(); i++) 
+			leftBorders.push_back(GetLeftBorderForOneCore(i,stage));
+	}
+	
+	// find the pool of possible core numbers for each package
+	for (vector<pair<double,unsigned int>>::size_type i = 0; i < timeCores.size(); i++){
+		int minTime = T, minIndex = -1;
+		for (vector<pair<double,unsigned int>>::size_type sort = i; sort < timeCores.size(); sort++){
+			if (timeCores[sort].first < minTime && find(packageIndexesTimeDesc.begin(), packageIndexesTimeDesc.end(), sort) == packageIndexesTimeDesc.end()){
+				minTime = timeCores[sort].first;
+				minIndex = sort;
+			}
+		}
+		packageIndexesTimeDesc.push_back(minIndex);
+		// j - number of core
+		for (int j = 0; j < GetCoresCount(); j++) {
+			// if core isn't busy on this stage
+			if (rightBorders[j] != 0 && find (usedNums.begin(), usedNums.end(), j) == usedNums.end()){
+				// if package can be placed on this core, add core number to possiblePackagesCores
+				if (isCheckedForState){
+					if (leftBorders[j] + timeCores[i].first <= rightBorders[j] || rightBorders[j]==T)
+						possiblePackagesCores[i].push_back(j);
+				}
+				else {
+					if (stage * delta + timeCores[i].first <= rightBorders[j] || rightBorders[j]==T)
+						possiblePackagesCores[i].push_back(j);
+				}
+			}
+		}
+		// ordering in rightBorders[j] asc
+		for (int i1 = 0; i1 < possiblePackagesCores[i].size()-1; i1++){
+			for (int i2 = i1+1; i2 < possiblePackagesCores[i].size(); i2++){
+				if (rightBorders[i1] > rightBorders[i2]){
+					int swap = possiblePackagesCores[i][i1];
+					possiblePackagesCores[i][i1] = possiblePackagesCores[i][i2];
+					possiblePackagesCores[i][i2] = swap;
+				}
+			}
+		}
+	}
+	
+
+
 	// for each packages
-	for (unsigned int i = 0; i < timeCores.size(); i++){
-		vector <int> usedNumsForOnePackage;
-		double time = timeCores[i].first;
-		int coreNum = timeCores[i].second;
+	for (vector <vector<int>>::size_type i = 0; i < packageIndexesTimeDesc.size(); i++){
+		int index = packageIndexesTimeDesc[i];
+		double time = timeCores[index].first;
+		int coreNum = timeCores[index].second;
 		int numStages = time/delta;
 		if (time < delta) numStages++;
 		else if ((int)time % delta!=0) numStages++;
 		int coresViewed = 0, numberAdopted = 0;
+		vector<int> onePackageUsedNums;
 		for (int k = 0; k < coreNum; k++){
-			for (unsigned int j = 0; j < coreTimes.size(); j++){
-				// if this core is avaliable
-				if (nearestBorders[j]!=0){
-					// if the core has not been used previously
-					if (find (usedNums.begin(), usedNums.end(), j) == usedNums.end()){
-						// if we have enough time on this core or nearestBorder is equal to T
-						if (nearestBorders[j]-stage*delta >= time || nearestBorders[j] == T){
-							numberAdopted++;
-							coresViewed++;
-							usedNums.push_back(j);
-							usedNumsForOnePackage.push_back(j);
-						}
+			for (unsigned int j = 0; j < possiblePackagesCores[index].size(); j++){
+				int currentCore = possiblePackagesCores[index][j];
+				if (find (usedNums.begin(), usedNums.end(), currentCore) == usedNums.end()){
+						numberAdopted++;
+						coresViewed++;
+						onePackageUsedNums.push_back(j);
+							
 						if (canExecuteOnDiffResources==false){
-							if (coresViewed==numCoresPerOneRes-1) {
+						// if currentCore is not last in possiblePackageCores
+							if (j!=possiblePackagesCores[index].size()-1
+								// and next core is on different resource
+								&& IsDifferentResources(possiblePackagesCores[index][j+1],currentCore)
+								// and concretization was not found
+								&& numberAdopted != coreNum) {
 								coresViewed = 0;
-								if (numberAdopted!=coreNum) numberAdopted = 0;
+								numberAdopted = 0;
+								onePackageUsedNums.clear();
 							}
-						}
 					}
 				}
-				if (numberAdopted==coreNum) break;
+			}
+			if (numberAdopted==coreNum) {
+				oneTypeCoreNums[index] = onePackageUsedNums;
+				break;
 			}
 		}
 		if (numberAdopted!=coreNum) return false;
-		
-		vector <int> numStagesVec;
-		for (int j = 0; j < numStages; j++) numStagesVec.push_back(stage+j);
-		fullUsedNums.push_back(make_pair(numStagesVec,usedNumsForOnePackage));
-
-		/*if (debugFlag){
-			ofstream f("checkd.txt", ios::app);
-			f << "usedNums after distribution: ";
-			for (vector<int>::iterator it = usedNumsForOnePackage.begin(); it!= usedNumsForOnePackage.end(); it++)
-				f << *it << " ";
-			f << endl;
-			f.close();
-		}*/
-
-		if (isUsedNumsNeeded) {
-			stageUsedNums.push_back(usedNumsForOnePackage);
-		}
-		
-		// for (unsigned int j = 0; j < usedNums.size(); j++) coreTimes[usedNums[j]]=0;
 	}
-	
+			
 	return true;
 }
 
