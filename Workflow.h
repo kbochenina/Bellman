@@ -41,9 +41,11 @@ class Workflow{
 	bool CheckState(int stateNumber, int stage);
 	void SetTimesCoresForState(const vector<int>&state, vector<vector<pair<double, unsigned int>>>&coresPerType, 
 		vector<vector<int>>& packagesIndexesPerType);
-	void SetTimesCoresForControl(const vector<int>&state, const vector<int>&control, vector<vector<pair<double, unsigned int>>>&coresPerType);
+	void SetTimesCoresForControl(const vector<int>&state, const vector<int>&control, vector<vector<pair<double, unsigned int>>>&coresPerType,
+		vector<vector<int>>& packagesIndexesPerType);
 	double GetLevel(int pNum, int state);
 	void PrintState(const vector <int>& state, ofstream &f);
 	void PrintControl(const vector <int>& control, ofstream &f);
 	void PrintExecTime();
+	double GetExecTime(int pNum, int stateNum);
 };

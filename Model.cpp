@@ -2,7 +2,9 @@
 #include "Model.h"
 #include <boost/filesystem.hpp>
 
+
 using namespace boost::filesystem;
+
 
 bool SortPairs(pair <int, double> p1, pair <int,double> p2){
 	return (p1.second > p2.second);
@@ -601,8 +603,8 @@ void Model::StagedScheme(int firstWfNum){
 					DirectBellman(i);
 					allStagesCores = stagesCores;
 					usedWFNums.push_back(firstWfNum);
-					/*BellmanToXML(true);
-					std::system("pause");*/
+					BellmanToXML(true);
+					std::system("pause");
 					AddDiaps(0, firstWfNum);
 					stagesCores.clear();
 					/*BellmanToXML(true);
@@ -762,31 +764,59 @@ double Model::DirectBellman(int wfNum){
 		if (resFileName.size()==0) throw UserException(emptyFileName);
 		ofstream f(resFileName);
 		if (f.fail()) throw UserException(errFileOpen);
+		vector <int> bestStates;
+		vector <int> bestControlNums;
 		int currentNum = 0;
 		double maxEff = FullInfo[0][0].second;
 		for (int i = 0; i < stages; i++){
-			vector<vector<int>> stageUsedNums;
-			timeCore timeCores;
-			timeCores.resize(Resources.size());
+			bestStates.push_back(currentNum);
 			int uopt = FullInfo[i][currentNum].first;
+			bestControlNums.push_back(uopt);
 			Workflows[wfNum]->PrintState(states[currentNum], f);
 			Workflows[wfNum]->PrintControl(controls[currentNum][uopt], f);
-			if (CheckControl(currentNum,uopt,i,timeCores, true, stageUsedNums, false)==false) 
-				throw UserException("DirectBellman() : cannot find a control");
-			int fullUsedNumIndex = 0;
-			string errMsgIndex = "DirectBellman(): Wrong fullUsedNumIndex value",
-				errMsgSize = "DirectBellman() :Wrong fullUsedNums size()";
-			for (int j = 0; j < controls[currentNum][uopt].size(); j++){
-				if (controls[currentNum][uopt][j] != -1 
-					&& Workflows[wfNum]->GetLevel(j,states[currentNum][j])==0){
-					if (fullUsedNumIndex > stageUsedNums.size()-1) throw UserException(errMsgIndex);
-					if (stageUsedNums.size()==0) throw UserException(errMsgSize);
-					stagesCores.push_back(make_tuple(j,i,stageUsedNums[fullUsedNumIndex]));
-					fullUsedNumIndex++;
-				}
-			}
 			currentNum = nextStateNumbers[currentNum][uopt];
 		}
+
+		
+		timeCore timeCores;
+		timeCores.resize(Resources.size());
+		
+		vector <vector<int>> packagesCoresNums;
+		packagesCoresNums.resize(Workflows[currentWfNum]->GetPackageCount());
+		vector<int> proceededPNums;
+		proceededPNums.resize(Workflows[currentWfNum]->GetPackageCount(),-1);
+
+		for (int i = stages-1; i >=0; i--){
+			if (!CheckState(bestStates[i],i,timeCores,packagesCoresNums))
+				throw UserException("DirectBellman() awful error: cannot find the concretization for state");
+			for (auto it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+				if (it->size()!=0){
+					int pNum = std::distance(packagesCoresNums.begin(), it);
+					if (find(proceededPNums.begin(), proceededPNums.end(),pNum)==proceededPNums.end()){
+						proceededPNums.push_back(pNum);
+						double execTime = Workflows[currentWfNum]->GetExecTime(pNum, states[bestStates[i]][pNum]);
+						int stageBegin = i+1 - execTime/delta;
+						if ((int)execTime%delta==0) stageBegin++;
+						stagesCores.push_back(make_tuple(pNum, stageBegin, *it));
+					}
+				}
+			}
+
+			timeCores.clear();
+			timeCores.resize(Resources.size());
+			if (!CheckControl(bestStates[i],bestControlNums[i],stages-1,timeCores,packagesCoresNums))
+				throw UserException("DirectBellman() awful error: cannot find the concretization for control");
+			for (auto it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+				if (it->size()!=0){
+					int pNum = std::distance(packagesCoresNums.begin(), it);
+					if (find(proceededPNums.begin(), proceededPNums.end(),pNum)==proceededPNums.end()){
+						proceededPNums.push_back(pNum);
+						stagesCores.push_back(make_tuple(pNum, i, *it));
+					}
+				}
+			}
+		}
+	
 		return maxEff;
 		//BellmanToXML();
 		f.close();
@@ -968,26 +998,21 @@ void Model::GetStageInformation(int stage){
 		Workflows[currentWfNum]->PrintState(states[i],f);*/
 		int uopt = 0;
 		double maxEff = 0.0; 
-		vector<vector<pair<double, unsigned int>>> timeCoresPerType;
-		timeCoresPerType.resize(Resources.size());
+		timeCore stateTimeCores;
+		stateTimeCores.resize(Resources.size());
 		vector <vector<int>> packagesCoresNums; // ((coreNum1, coreNum2,...)-package1, (coreNum1, coreNum2,...)-package2)
 		packagesCoresNums.resize(Workflows[currentWfNum]->GetPackageCount());
-
-		// possibly unused
-		vector<vector<int>> stageUsedNums;
-
 		// if we have right core number for this state
-		if (CheckState(i, stage, timeCoresPerType, packagesCoresNums)) {
-			vector <pair<vector<int>,vector<int>>> stateUsedNums = fullUsedNums;
+		if (CheckState(i, stage, stateTimeCores, packagesCoresNums)) {
 			vector<vector<int>>::const_iterator controlsIt = controls[i].begin();
 			int controlIndex = 0;
 			for (; controlsIt!=controls[i].end(); controlsIt++){
-				fullUsedNums = stateUsedNums;
-				timeCore currentTimeCore = timeCoresPerType;
-				if (CheckControl(i, controlIndex, stage, currentTimeCore,true, stageUsedNums, debugFlag)){
+				timeCore controlTimeCores;
+				controlTimeCores.resize(Resources.size());
+				if (CheckControl(i, controlIndex, stage, controlTimeCores,packagesCoresNums)){
 					// if it is the last period
 					
-					double currEff = GetEfficiency(stage, currentTimeCore);
+					double currEff = GetEfficiency(stage, stateTimeCores, controlTimeCores);
 					if (stage == stages-1){
 						if (currEff > maxEff){
 							maxEff = currEff;
@@ -1001,16 +1026,16 @@ void Model::GetStageInformation(int stage){
 							uopt = controlIndex;
 						}
 					}
-					fullUsedNums.clear();
+			
 				}
 				controlIndex++;
 			}
 		}
 		FullInfo[stage][i] = make_pair(uopt, maxEff);
-		/*f << uopt << " ";
+		f << uopt << " ";
 		Workflows[currentWfNum]->PrintControl(controls[i][uopt], f);
 		f << nextStateNumbers[i][uopt] << " ";
-		Workflows[currentWfNum]->PrintState(states[nextStateNumbers[i][uopt]], f);*/
+		Workflows[currentWfNum]->PrintState(states[nextStateNumbers[i][uopt]], f);
 		if (stage==0) break;
 	}		
 	
@@ -1019,10 +1044,20 @@ void Model::GetStageInformation(int stage){
 	
 }
 
-double Model::GetEfficiency(const int & stage, const timeCore& currentTC){
+double Model::GetEfficiency(const int & stage, const timeCore& state, const timeCore& control){
 	double eff = 0.0;
-	timeCore::const_iterator tcIt = currentTC.begin();
-	for (;tcIt!=currentTC.end(); tcIt++){
+	timeCore::const_iterator tcIt = state.begin();
+	for (;tcIt!=state.end(); tcIt++){
+		vector<pair<double,unsigned int>>::const_iterator pairsIt = tcIt->begin();
+		for (;pairsIt!=tcIt->end(); pairsIt++){
+			int tbegin = stage*delta;
+			int tend = tbegin + (int)pairsIt->first;
+			if (tend > T) tend = T;
+			eff += EfficiencyByPeriod(pairsIt->second, tbegin, tend);
+		}
+	}
+	tcIt = control.begin();
+	for (;tcIt!=control.end(); tcIt++){
 		vector<pair<double,unsigned int>>::const_iterator pairsIt = tcIt->begin();
 		for (;pairsIt!=tcIt->end(); pairsIt++){
 			int tbegin = stage*delta;
@@ -1034,31 +1069,116 @@ double Model::GetEfficiency(const int & stage, const timeCore& currentTC){
 	return eff;
 }
 
+void Model::SetOneTypeCoreNums(int typeIndex, vector<int> &addForbiddenCoreNums, vector<int>& out){
+	try{
+		if (typeIndex > Resources.size()-1 || typeIndex < 0) throw UserException("Model::SetOneTypeCoreNums() : wrong typeIndex value");
+		// find the first and last global indexes of cores of type typeIndex
+		int beginCoreIndex = 0, lastCoreIndex = Resources[0]->GetCoresCount()-1;
+		for (int i = 1; i <= typeIndex; i++){
+			beginCoreIndex = lastCoreIndex+1;
+			lastCoreIndex = beginCoreIndex + Resources[i]->GetCoresCount()-1;
+		}
+		/*
+			if state package executes on resource of this type, copy busy resources to oneTypeCoreNums 
+		*/
+		for (vector<int>::iterator aI = addForbiddenCoreNums.begin(); aI!= addForbiddenCoreNums.end(); aI++){
+			
+				if (*aI >= beginCoreIndex && *aI <= lastCoreIndex){
+						out.push_back(*aI);
+				}
+			
+		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+/*
+parameters:
+state - state number (used in SetTimesForControl() to check if level = 0)
+control - control number
+stage - stage number (from 0)
+timeCoresPerType - input/output parameter of type size()
+output: particle timeCoresPerType for current control 
+packagesCoreNums - packagesCoreNums for state and control
+*/
 bool Model::CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage,
-	timeCore& timeCoresPerType, bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums, bool debugFlag){
+	timeCore& timeCoresPerType, vector <vector<int>>& packagesCoresNums){
 	try {
-		string errMsg = "timeCoresPerType has wrong size";
-		if (timeCoresPerType.size()!=Resources.size()) throw UserException(errMsg);
-		Workflows[currentWfNum]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType);
-		vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
-		unsigned int typeIndex = 0;
+		if (timeCoresPerType.size()!=Resources.size()) throw UserException("Model::CheckControl() : timeCoresPerType has wrong size");
+		if (packagesCoresNums.size()==0) throw UserException("Model::CheckControl() : packagesCoresNums has zero size");
+		vector <vector<int>> packagesIndexesPerType;
+		packagesIndexesPerType.resize(Resources.size());
+		vector <int> busyCores;
+		// fullfilling busy cores
+		for (vector <vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+			copy(it->begin(), it->end(),back_inserter(busyCores));
+		}
+
+
+		Workflows[currentWfNum]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType,
+			packagesIndexesPerType);
+
+		for (vector<vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+			// if package also has the concretization
+			if (it->size()!=0){
+				// find the package number
+				int pNum = distance(packagesCoresNums.begin(), it);
+				// if this package executed on this state
+				// delete his parameters from input arrays timeCoresPerType and packagesIndexesPerType
+				for (auto pI = packagesIndexesPerType.begin(); pI!= packagesIndexesPerType.end(); pI++){
+					int type = distance(packagesIndexesPerType.begin(), pI);
+					auto findIt = find(pI->begin(),pI->end(), pNum);
+					if (findIt!=pI->end()){
+						int index = distance(pI->begin(), findIt);
+						timeCoresPerType[type].erase(timeCoresPerType[type].begin()+index,
+							timeCoresPerType[type].begin()+index+1);
+						packagesIndexesPerType[type].erase(packagesIndexesPerType[type].begin()+index,
+							packagesIndexesPerType[type].begin()+index+1);
+					}
+				}
+			}
+		}
+
+		vector<vector<pair<double, unsigned int>>>::iterator tCit = timeCoresPerType.begin();
+		unsigned int typeIndex = 0; 
 		unsigned int inc = 0;
 		for (;tCit != timeCoresPerType.end(); tCit++){
-			vector <vector<int>> usedNums; 
 			if (tCit->size()!=0){
-				if (Resources[typeIndex]->Check(*tCit, stage, 
-					usedNums, debugFlag)==false) 
-					return false;
-			}
-			if (isUsedNumsNeeded){
-				for (vector<vector<int>>::iterator packIt = usedNums.begin(); packIt!= usedNums.end(); packIt++){
-					for (vector<int>::iterator coreIt = packIt->begin(); coreIt!=packIt->end(); coreIt++)
-						*coreIt += inc;
+				vector <vector<int>> oneTypeCoreNums;
+				vector<int> forbiddenCores;
+				SetOneTypeCoreNums(typeIndex, busyCores, forbiddenCores);
+				// oneTypeCoreNums contains LOCAL core numbers for type typeindex
+				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, false, forbiddenCores);
+				if (checkType == false) return checkType;
+				int packageIndex = 0;
+				// for each packages indexes for this type
+				for (vector<int>::iterator indexIt = packagesIndexesPerType[typeIndex].begin();
+					indexIt!=packagesIndexesPerType[typeIndex].end(); indexIt++){
+					auto coresIt = std::begin(oneTypeCoreNums[packageIndex]);
+					// find global core numbers
+					for (; coresIt!= std::end(oneTypeCoreNums[packageIndex]); coresIt++)
+						*coresIt += inc;
+					// concretizing the package
+					packagesCoresNums[*indexIt] = oneTypeCoreNums[packageIndex];
+					packageIndex++;
 				}
-				inc += Resources[typeIndex]->GetCoresCount();
-				copy(usedNums.begin(),usedNums.end(), back_inserter(stageUsedNums));
 			}
+			inc += Resources[typeIndex]->GetCoresCount();
 			typeIndex++;	
+		}
+		// find the PARTICLE times for controls (times only on current stage)
+		for (;tCit != timeCoresPerType.end(); tCit++){
+			if (tCit->size()!=0){
+				for (vector<pair<double, unsigned int>>::iterator pairsIt = tCit->begin(); pairsIt!=tCit->end(); pairsIt++){
+					if (pairsIt->first > delta){
+						pairsIt->first = delta;
+					}
+				}
+			}
 		}
 		return true;
 	}
@@ -1072,40 +1192,92 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 state - state number in states
 stage - current stage number, counted from 0
 timeCoresPerType - array of resources types size, each element is a vector of <execTime, numCores> for this type
-				   (received from current state)
+				   (received from current state in function SetTimesCoresForState())
+				   Later timeCoresPerType contains PARTICLE times for states (only on current stage)
+					
 packagesCoresNums - out parameter, vector of concrete GLOBAL coreNums after concretising the state
 */
-bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType, vector <vector<int>>& packagesCoreNums){
-	
-	vector <vector<int>> packagesIndexesPerType;
-	packagesIndexesPerType.resize(Resources.size());
-	Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType, packagesIndexesPerType);
-	vector<vector<pair<double, unsigned int>>>::const_iterator tCit = timeCoresPerType.begin();
-	unsigned int typeIndex = 0; 
-	unsigned int inc = 0;
-	for (;tCit != timeCoresPerType.end(); tCit++){
-		if (tCit->size()!=0){
-			vector <vector<int>> oneTypeCoreNums;
-			// oneTypeCoreNums contains LOCAL core numbers for type typeindex
-			bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, true);
-			if (checkType == false) return checkType;
-			int packageIndex = 0;
-			// for each packages indexes for this type
-			for (vector<int>::iterator indexIt = packagesIndexesPerType[typeIndex].begin();
-				indexIt!=packagesIndexesPerType[typeIndex].end(); indexIt++){
-				auto coresIt = begin(oneTypeCoreNums[packageIndex]);
-				// find global core numbers
-				for (; coresIt!= end(oneTypeCoreNums[packageIndex]); coresIt++)
-					*coresIt += inc;
-				// concretizing the package
-				packagesCoreNums[*indexIt] = oneTypeCoreNums[packageIndex];
-				packageIndex++;
+bool Model::CheckState (const unsigned int state, const unsigned int stage, timeCore& timeCoresPerType, 
+	vector <vector<int>>& packagesCoresNums){
+	try{
+		if (timeCoresPerType.size()!=Resources.size()) throw UserException("Model::CheckState() : timeCoresPerType has wrong size");
+		if (packagesCoresNums.size()==0) throw UserException("Model::CheckState() : packagesCoresNums has zero size");
+		vector <vector<int>> packagesIndexesPerType;
+		packagesIndexesPerType.resize(Resources.size());
+		vector<int> busyCores;
+		// fullfilling busy cores
+		for (vector <vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+			copy(it->begin(), it->end(),back_inserter(busyCores));
+		}
+
+		Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType, packagesIndexesPerType);
+
+		for (vector<vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+			// if package also has the concretization
+			if (it->size()!=0){
+				// find the package number
+				int pNum = distance(packagesCoresNums.begin(), it);
+				// if this package executed on this state
+				// delete his parameters from input arrays timeCoresPerType and packagesIndexesPerType
+				for (auto pI = packagesIndexesPerType.begin(); pI!= packagesIndexesPerType.end(); pI++){
+					int type = distance(packagesIndexesPerType.begin(), pI);
+					auto findIt = find(pI->begin(),pI->end(), pNum);
+					if (findIt!=pI->end()){
+						int index = distance(pI->begin(), findIt);
+						timeCoresPerType[type].erase(timeCoresPerType[type].begin()+index,
+							timeCoresPerType[type].begin()+index+1);
+						packagesIndexesPerType[type].erase(packagesIndexesPerType[type].begin()+index,
+							packagesIndexesPerType[type].begin()+index+1);
+					}
+				}
 			}
 		}
-		inc += Resources[typeIndex]->GetCoresCount();
-		typeIndex++;	
+
+		vector<vector<pair<double, unsigned int>>>::iterator tCit = timeCoresPerType.begin();
+		unsigned int typeIndex = 0; 
+		unsigned int inc = 0;
+		for (;tCit != timeCoresPerType.end(); tCit++){
+			if (tCit->size()!=0){
+				vector <vector<int>> oneTypeCoreNums;
+				vector<int> forbiddenCores;
+				SetOneTypeCoreNums(typeIndex, busyCores, forbiddenCores);
+				// oneTypeCoreNums contains LOCAL core numbers for type typeindex
+				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, true, forbiddenCores);
+				if (checkType == false) return checkType;
+				int packageIndex = 0;
+				// for each packages indexes for this type
+				for (vector<int>::iterator indexIt = packagesIndexesPerType[typeIndex].begin();
+					indexIt!=packagesIndexesPerType[typeIndex].end(); indexIt++){
+					auto coresIt = std::begin(oneTypeCoreNums[packageIndex]);
+					// find global core numbers
+					for (; coresIt!= std::end(oneTypeCoreNums[packageIndex]); coresIt++)
+						*coresIt += inc;
+					// concretizing the package
+					packagesCoresNums[*indexIt] = oneTypeCoreNums[packageIndex];
+					packageIndex++;
+				}
+			}
+			inc += Resources[typeIndex]->GetCoresCount();
+			typeIndex++;	
+		}
+		// find the PARTICLE times for states (times only on current stage)
+		for (;tCit != timeCoresPerType.end(); tCit++){
+			if (tCit->size()!=0){
+				for (vector<pair<double, unsigned int>>::iterator pairsIt = tCit->begin(); pairsIt!=tCit->end(); pairsIt++){
+					if (pairsIt->first > delta){
+						int fullBusyStages = pairsIt->first/delta;
+						pairsIt->first -= fullBusyStages/delta;
+					}
+				}
+			}
+		}
+		return true;
 	}
-	return true;
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 

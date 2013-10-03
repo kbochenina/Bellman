@@ -187,7 +187,8 @@ int ResourceType::GetRightBorderForOneCore(const unsigned int &core, const unsig
 int  ResourceType::GetLeftBorderForOneCore(const unsigned int &core, const unsigned int &stage){
 	if (allCoresFreeTimes[stage][core]==0) return 0;
 	int currentStage = stage;
-	while (currentStage >= 0 && allCoresFreeTimes[currentStage][core] == delta) currentStage--;
+	while (currentStage-1 >= 0 && allCoresFreeTimes[currentStage-1][core] == delta) 
+		currentStage--;
 	return currentStage*delta;
 }
 
@@ -202,8 +203,8 @@ stage - stage number
 oneTypeCoreNums - vector of timeCores.size() size which contains LOCAL core numbers for resource type after concretizing
 isCheckedForState = true if ResourceType::Check() is called in CheckState(). 
 This means than we must find stages of beginning for all packages and fullfill oneTypeCoreNums with state concretizing.
-Otherwise, oneTypeCoreNums contains concretized cores for state (they will be forbidden), and after concretizing controls
-values of oneTypeCoreNums replaced with cores for controls
+Otherwise, oneTypeCoreNums contains cores for controls
+addForbiddenCoreNums - forbidden cores from state or previous desicions in DirectBellman()
 */
 bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
 	vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState){
@@ -211,7 +212,9 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	vector <int> usedNums;
 	vector <int>& coreTimes = allCoresFreeTimes[stage];
 	vector <vector<int>> possiblePackagesCores;
+	oneTypeCoreNums.resize(timeCores.size());
 	possiblePackagesCores.resize(timeCores.size());
+	
 	// indexes of packages in timeCores sorted in descending order by time
 	vector <int> packageIndexesTimeDesc;
 	
@@ -220,15 +223,12 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		rightBorders.push_back(GetRightBorderForOneCore(i,stage));
 
 	
-	// cores for states are forbidden
-	if (!isCheckedForState) {
-		for (vector<vector<int>>::iterator it = begin(oneTypeCoreNums); it != end(oneTypeCoreNums); it++){
-			for (vector<int>::iterator val = begin(*it); val != end(*it); val++){
-				usedNums.push_back(*val);
-			}
-		}
+	// forbidden cores
+	for (vector<int>::iterator it = begin(addForbiddenCoreNums); it != end(addForbiddenCoreNums); it++){
+			usedNums.push_back(*it);
 	}
-	else {
+		
+	if (isCheckedForState){
 		for (int i = 0; i < GetCoresCount(); i++) 
 			leftBorders.push_back(GetLeftBorderForOneCore(i,stage));
 	}
@@ -261,7 +261,7 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		// ordering in rightBorders[j] asc
 		for (int i1 = 0; i1 < possiblePackagesCores[i].size()-1; i1++){
 			for (int i2 = i1+1; i2 < possiblePackagesCores[i].size(); i2++){
-				if (rightBorders[i1] > rightBorders[i2]){
+				if (rightBorders[possiblePackagesCores[i][i1]] > rightBorders[possiblePackagesCores[i][i2]]){
 					int swap = possiblePackagesCores[i][i1];
 					possiblePackagesCores[i][i1] = possiblePackagesCores[i][i2];
 					possiblePackagesCores[i][i2] = swap;
@@ -303,11 +303,12 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 							}
 					}
 				}
+				if (numberAdopted==coreNum) {
+					oneTypeCoreNums[index] = onePackageUsedNums;
+					break;
+				}
 			}
-			if (numberAdopted==coreNum) {
-				oneTypeCoreNums[index] = onePackageUsedNums;
-				break;
-			}
+			
 		}
 		if (numberAdopted!=coreNum) return false;
 	}

@@ -40,16 +40,17 @@ class Model
 	// methods
 	void InitResources(string);
 	void InitWorkflows(string);
-	bool CheckState (const unsigned int state, const unsigned int stage,timeCore& typeCoresPerType, vector <vector<int>>& packagesCoreNums);
+	bool CheckState (const unsigned int state, const unsigned int stage,timeCore& typeCoresPerType, 
+		vector <vector<int>>& packagesCoreNums);
 	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, 
-		bool isUsedNumsNeeded, vector<vector<int>> &stageUsedNums, bool debugFlag);
+		vector <vector<int>>& packagesCoreNums);
 	void SetForcedBricks();
 	double efficiencyFunction(double x) { return (koeff*(1-x)); }
 	double EfficiencyByPeriod(int busyCores, int t1, int t2){
 		return ( busyCores * (double)(t2-t1)/(double)T * (efficiencyFunction((double)t1/(double)T) + efficiencyFunction((double)t2/(double)T)) / 2  );
 	}
 	int GetStatesCount() {return states.size();}
-	double GetEfficiency(const int & stage, const timeCore& currentTC);
+	double GetEfficiency(const int & stage, const timeCore& state, const timeCore& control);
 	void BellmanToXML(bool isOne);
 	void MetaXMLInfo(ofstream &f);
 	void BusyToXML(ofstream &f);
@@ -62,6 +63,7 @@ class Model
 	int GetResourceType(int number);
 	int GetResourceTypeBeginIndex(int type);
 	void Model::StagesCoresToXML(ofstream&f, int currentWfNum);
+	void Model::SetOneTypeCoreNums(int typeIndex, vector<int> &addForbiddenCoreNums, vector<int>& out);
 public:
 	Model(){}
 	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO

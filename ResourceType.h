@@ -28,7 +28,7 @@ public:
 	int GetResourceCount(){return resources.size();}
 	Resource& operator[](const int index){return resources[index];}
 	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
-		vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState);
+		vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState, vector <int>& addForbiddenCoreNums);
 	void SetInitLastVals(unsigned short i, unsigned short l) {initVal = i; lastVal = l;}
 	unsigned short GetInitVal(){return initVal;}
 	void SetFreeTimeEnds(); // if we want to set default free time ends;

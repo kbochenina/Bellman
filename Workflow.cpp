@@ -459,6 +459,7 @@ void Workflow::SetTimesCoresForState(const vector<int>&state, vector<vector<pair
 			if (type!=0){
 				timeCoresPerType[type-1].push_back(make_pair(packages[packageIndex]->GetExecTime(*stateIt),
 					packages[packageIndex]->GetCore(*stateIt)));
+				packagesIndexesPerType[type-1].push_back(packageIndex);
 			}
 			packageIndex++;
 		}
@@ -471,23 +472,29 @@ void Workflow::SetTimesCoresForState(const vector<int>&state, vector<vector<pair
 }
 
 void Workflow::SetTimesCoresForControl(const vector<int>&state, const vector<int>&control, 
-	vector<vector<pair<double, unsigned int>>>&timeCoresPerType){
+	vector<vector<pair<double, unsigned int>>>&timeCoresPerType, vector<vector<int>>& packagesIndexesPerType){
 	vector <int>::const_iterator controlIt = control.begin();
-	int controlIndex = 0;
+	int packageIndex = 0;
 	for (;controlIt!=control.end(); controlIt++){
 		if (*controlIt!=-1){
 			int type = _reftypesCores[*controlIt].first;
 			int core = _reftypesCores[*controlIt].second;
 			// if control isn`t "zero" and level is null
-			if (type != 0 && packages[controlIndex]->GetLevel(state[controlIndex])==0)
-				timeCoresPerType[type-1].push_back(make_pair(packages[controlIndex]->GetExecTime(type,core), core));
+			if (type != 0 && packages[packageIndex]->GetLevel(state[packageIndex])==0) {
+				timeCoresPerType[type-1].push_back(make_pair(packages[packageIndex]->GetExecTime(type,core), core));
+				packagesIndexesPerType[type-1].push_back(packageIndex);
+			}
 		}
-		controlIndex++;
+		packageIndex++;
 	}
 }
 
 double Workflow::GetLevel(int pNum, int state){
 	return packages[pNum]->GetLevel(state);
+}
+
+double Workflow::GetExecTime(int pNum, int state){
+	return packages[pNum]->GetExecTime(state);
 }
 
 double Workflow::GetExecTime(int pNum, int type, int cores) {
