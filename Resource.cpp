@@ -240,13 +240,18 @@ void Resource::GetFreeTime(std::vector <std::vector<int>> & vec){
 		for (int i = 0; i < T; i+=delta){
 			int bBegin = intervals[indexBusyInterval].first;
 			int bEnd = intervals[indexBusyInterval].second;
-			if (resourceIndex > (int)vec[i/delta].size()-1) throw UserException("Resource::GetFreeTime(): wrong vec[i/delta] size");
+			if (bEnd % delta!=0) {
+				bEnd = (bEnd/delta + 1) * delta;
+			}
+			if (resourceIndex > (int)vec[i/delta].size()-1) 
+				throw UserException("Resource::GetFreeTime(): wrong vec[i/delta] size");
 			if (i < bBegin && i+delta <= bBegin) vec[i/delta][resourceIndex] = delta;
 			else {
 				vec[i/delta][resourceIndex] = bBegin - i;
 				i+=delta;
 				while(i!=bEnd) {
-					if (i/delta > vec.size()-1) throw UserException("Resource::GetFreeTime(): wrong i/delta");
+					if (i/delta > vec.size()-1) 
+						throw UserException("Resource::GetFreeTime(): wrong i/delta");
 					vec[i/delta][resourceIndex] = 0;
 					i+=delta;
 				}

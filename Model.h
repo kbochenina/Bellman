@@ -60,6 +60,7 @@ class Model
 	double DirectBellman(int wfNum);
 	void BackBellmanProcedure();
 	void AddDiaps(int beginIndex, int wfNum);
+	void ResetBusyIntervals();
 	int GetResourceType(int number);
 	int GetResourceTypeBeginIndex(int type);
 	void Model::StagesCoresToXML(ofstream&f, int currentWfNum);

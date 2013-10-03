@@ -221,12 +221,7 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	vector <int> rightBorders, leftBorders;
 	for (int i = 0; i < GetCoresCount(); i++) 
 		rightBorders.push_back(GetRightBorderForOneCore(i,stage));
-
-	
-	// forbidden cores
-	for (vector<int>::iterator it = begin(addForbiddenCoreNums); it != end(addForbiddenCoreNums); it++){
-			usedNums.push_back(*it);
-	}
+		
 		
 	if (isCheckedForState){
 		for (int i = 0; i < GetCoresCount(); i++) 
@@ -305,6 +300,9 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 				}
 				if (numberAdopted==coreNum) {
 					oneTypeCoreNums[index] = onePackageUsedNums;
+					// add to busy intervals
+					if (stage + numStages > stages) numStages = stages - stage;
+					AddDiaps(stage, numStages, onePackageUsedNums);
 					break;
 				}
 			}
@@ -335,5 +333,10 @@ int ResourceType::GetResourceIndex(int core){
 void ResourceType::SetInitBusyIntervals(){
 	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
 		it->SetInitBusyIntervals();
+}
+
+void ResourceType::FixBusyIntervals(){
+	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
+		it->FixBusyIntervals();
 }
 

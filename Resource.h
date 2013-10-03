@@ -30,5 +30,6 @@ class Resource{
 	std::vector <unsigned int> GetForcedBricks(){return forcedBricks;}
 	void AddDiap(int stageBegin, int stageCount, int coreNum);
 	void SetInitBusyIntervals(){busyIntervals = initBusyIntervals;}
+	void FixBusyIntervals(){initBusyIntervals = busyIntervals;}
 	
 };

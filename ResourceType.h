@@ -28,7 +28,7 @@ public:
 	int GetResourceCount(){return resources.size();}
 	Resource& operator[](const int index){return resources[index];}
 	bool Check(const vector<pair<double,unsigned int>>& timeCores, const int &stage,  
-		vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState, vector <int>& addForbiddenCoreNums);
+		vector<vector<int>>& oneTypeCoreNums, bool isCheckedForState);
 	void SetInitLastVals(unsigned short i, unsigned short l) {initVal = i; lastVal = l;}
 	unsigned short GetInitVal(){return initVal;}
 	void SetFreeTimeEnds(); // if we want to set default free time ends;
@@ -46,5 +46,6 @@ public:
 	std::vector<int> GetForcedNumbers(const int &execTime, const int &stageBegin, int numCores = 1);
 	void AddDiaps(int stageBegin, int stageCount, vector<int>& cores);
 	void SetInitBusyIntervals();
+	void FixBusyIntervals();
 };
 

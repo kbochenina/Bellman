@@ -1029,6 +1029,7 @@ void Model::GetStageInformation(int stage){
 			
 				}
 				controlIndex++;
+				ResetBusyIntervals();
 			}
 		}
 		FullInfo[stage][i] = make_pair(uopt, maxEff);
@@ -1042,6 +1043,12 @@ void Model::GetStageInformation(int stage){
 	//cout << "Stage " << stage << " has " << num << " states." << endl;
 	f.close();
 	
+}
+
+void Model::ResetBusyIntervals(){
+	for (auto i = Resources.begin(); i!= Resources.end(); i++){
+		(*i)->SetInitBusyIntervals();
+	}
 }
 
 double Model::GetEfficiency(const int & stage, const timeCore& state, const timeCore& control){
@@ -1112,11 +1119,7 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 		if (packagesCoresNums.size()==0) throw UserException("Model::CheckControl() : packagesCoresNums has zero size");
 		vector <vector<int>> packagesIndexesPerType;
 		packagesIndexesPerType.resize(Resources.size());
-		vector <int> busyCores;
-		// fullfilling busy cores
-		for (vector <vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
-			copy(it->begin(), it->end(),back_inserter(busyCores));
-		}
+		
 
 
 		Workflows[currentWfNum]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType,
@@ -1149,10 +1152,8 @@ bool Model::CheckControl(const unsigned int &state, const unsigned int &control,
 		for (;tCit != timeCoresPerType.end(); tCit++){
 			if (tCit->size()!=0){
 				vector <vector<int>> oneTypeCoreNums;
-				vector<int> forbiddenCores;
-				SetOneTypeCoreNums(typeIndex, busyCores, forbiddenCores);
 				// oneTypeCoreNums contains LOCAL core numbers for type typeindex
-				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, false, forbiddenCores);
+				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, false);
 				if (checkType == false) return checkType;
 				int packageIndex = 0;
 				// for each packages indexes for this type
@@ -1204,12 +1205,7 @@ bool Model::CheckState (const unsigned int state, const unsigned int stage, time
 		if (packagesCoresNums.size()==0) throw UserException("Model::CheckState() : packagesCoresNums has zero size");
 		vector <vector<int>> packagesIndexesPerType;
 		packagesIndexesPerType.resize(Resources.size());
-		vector<int> busyCores;
-		// fullfilling busy cores
-		for (vector <vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
-			copy(it->begin(), it->end(),back_inserter(busyCores));
-		}
-
+		
 		Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType, packagesIndexesPerType);
 
 		for (vector<vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
@@ -1239,10 +1235,8 @@ bool Model::CheckState (const unsigned int state, const unsigned int stage, time
 		for (;tCit != timeCoresPerType.end(); tCit++){
 			if (tCit->size()!=0){
 				vector <vector<int>> oneTypeCoreNums;
-				vector<int> forbiddenCores;
-				SetOneTypeCoreNums(typeIndex, busyCores, forbiddenCores);
 				// oneTypeCoreNums contains LOCAL core numbers for type typeindex
-				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, true, forbiddenCores);
+				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, true);
 				if (checkType == false) return checkType;
 				int packageIndex = 0;
 				// for each packages indexes for this type
