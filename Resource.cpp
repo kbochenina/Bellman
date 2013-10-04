@@ -28,14 +28,48 @@ private:
 	int number;
 };
 
-struct findIntersects{
-	explicit findIntersects(int n): number(n){}
+struct findBegin{
+	explicit findBegin(int n): number(n){}
 	inline bool operator () (pair<int,int> obj){
-		return (obj.first < number && obj.second > number);
+		return (obj.first == number);
 	}
 private:
 	int number;
 };
+
+struct findEnd{
+	explicit findEnd(int n): number(n){}
+	inline bool operator () (pair<int,int> obj){
+		return (obj.second == number);
+	}
+private:
+	int number;
+};
+
+struct findIntersectsDiap{
+	explicit findIntersectsDiap(int tb, int te): tbegin(tb), tend(te){}
+	inline bool operator () (pair<int,int> obj){
+		bool res = false;
+		if (obj.first <= tbegin && obj.second > tbegin) res = true;
+		if (obj.first < tend && obj.second >=tend) res = true;
+		if (obj.first==tbegin && obj.second==tend) res = false;
+		return (res);
+	}
+private:
+	int tbegin, tend;
+};
+
+struct findIntersects{
+	explicit findIntersects(int tb): tbegin(tb){}
+	inline bool operator () (pair<int,int> obj){
+		bool res = false;
+		if (obj.first <= tbegin && obj.second > tbegin) res = true;
+		return (res);
+	}
+private:
+	int tbegin;
+};
+
 
 struct isIn{
 	explicit isIn(int n): number(n){}
@@ -52,8 +86,8 @@ void Resource::SetForcedBricks(){
 	for (unsigned int i = 0; i < forcedBricks.size(); i++) 
 		forcedBricks[i]=0;
 	for (int i = 0; i < coresCount; i++){
-		vector <pair<int,int>>::iterator diap = busyIntervals[i+1].begin();
-		for (; diap!= busyIntervals[i+1].end(); diap++){
+		vector <pair<int,int>>::iterator diap = currentBusyIntervals[i+1].begin();
+		for (; diap!= currentBusyIntervals[i+1].end(); diap++){
 			int begin = diap->first;
 			int end = diap->second;
 			int beginBitNum = 0;
@@ -127,9 +161,9 @@ Resource::Resource(int n,int c, map <int,vector<pair<int,int>>> b)
 {
 	number = n;
 	coresCount = c;
-	busyIntervals = b;
-	currentBusyIntervals = busyIntervals;
-	initBusyIntervals = busyIntervals;
+	initBusyIntervals = b;
+	currentBusyIntervals = initBusyIntervals;
+	onlyFirstBusyIntervals = b;
 	for (unsigned int i = 0; i < coresCount; i++) forcedBricks.push_back(0);
 }
 
@@ -137,7 +171,7 @@ Resource::Resource(int n,int c, map <int,vector<pair<int,int>>> b)
 
 void Resource::CorrectBusyIntervals(const std::vector<int>&  vec){
 	
-	for (iInterval it = busyIntervals.begin(); it!= busyIntervals.end(); it++){
+	for (iInterval it = initBusyIntervals.begin(); it!= initBusyIntervals.end(); it++){
 		vector <int> toEraseNums;
 		int newVal = 0; 
 		for (vector<pair<int,int>>::iterator it2 = it->second.begin(); it2!=it->second.end(); it2++){
@@ -156,7 +190,7 @@ void Resource::CorrectBusyIntervals(const std::vector<int>&  vec){
 			it->second.erase(it->second.begin()+toEraseNums[i]);
 		}
 	}
-	currentBusyIntervals = busyIntervals;
+	currentBusyIntervals = initBusyIntervals;
 }
 
 std::vector <int>* Resource::GetForcedNumbers(){
@@ -170,7 +204,7 @@ std::vector <int>* Resource::GetForcedNumbers(){
 		exit(EXIT_FAILURE);
 	}
 	
-	for (iInterval it = busyIntervals.begin(); it!= busyIntervals.end(); it++){
+	for (iInterval it = currentBusyIntervals.begin(); it!= currentBusyIntervals.end(); it++){
 		int coreNum = it->first;
 		for (vector<pair<int,int>>::iterator it2 = it->second.begin(); it2!=it->second.end(); it2++){
 		int bBegin = it2->first;
@@ -198,7 +232,7 @@ std::vector <int>* Resource::GetForcedNumbers(){
 
 int Resource::GetNearestBorder(unsigned int coreNum, int stageBegin){
 	vector<int> nearestBorders;
-	for (iInterval it = busyIntervals.begin(); it!=busyIntervals.end(); it++){
+	for (iInterval it = currentBusyIntervals.begin(); it!=currentBusyIntervals.end(); it++){
 		if (it->second.size()==0) nearestBorders.push_back(T);
 		vector<pair<int,int>>::iterator it2 = std::find_if(it->second.begin(),it->second.end(),isIn(stageBegin));
 		if (it2==it->second.end()){
@@ -228,7 +262,7 @@ void Resource::GetFreeTime(std::vector <std::vector<int>> & vec){
 		
 	}
 	int resourceIndex = 0;
-	for (iInterval it = busyIntervals.begin(); it!= busyIntervals.end(); it++){
+	for (iInterval it = currentBusyIntervals.begin(); it!= currentBusyIntervals.end(); it++){
 		if (it->second.size()==0) {
 			for (int i = 0; i < T; i+=delta)
 				vec[i/delta][resourceIndex] = delta;
@@ -334,15 +368,79 @@ int Resource::GetPlacement(const int& tBegin, const int& execTime, const unsigne
 	return distance;
 }
 
-void Resource::AddDiap(int stageBegin, int stageCount, int coreNum){
+void Resource::AddDiap(int stageBegin, int execTime, int coreNum){
 	try{
 		if (coreNum < 0 || coreNum > coresCount - 1) throw UserException("Resource::AddDiap() : wrong core number" + to_string((long long)coreNum));
 		int tbegin = stageBegin*delta;
-		int tend = (stageBegin + stageCount) * delta;
+		if (tbegin%delta!=0) throw UserException("Resource::AddDiap() : fraction tbegin");
+		int tend = tbegin+execTime;
+		if (tend > T) tend = T;
+
+		coreNum++;
+
+		if (find_if(currentBusyIntervals[coreNum].begin(), currentBusyIntervals[coreNum].end(), findIntersectsDiap(tbegin, tend))
+			!=currentBusyIntervals[coreNum].end())
+			throw UserException("Resource::AddDiap() : attempt to add intersects diaps");
+
+		// expand tend to stage border
+		if (tend%delta!=0){
+			int stageNum = tend/delta;
+			tend = (stageNum + 1)*delta;
+		}
+
+		bool changedExistedDiap = false;
+		vector<pair<int,int>>::iterator currentDiap = currentBusyIntervals[coreNum].begin();
+		// if tbegin is equal to end of some diapason, that diapason will be extended
+		auto it1 = find_if(currentBusyIntervals[coreNum].begin(), currentBusyIntervals[coreNum].end(),findEnd(tbegin));
+		if (it1!=currentBusyIntervals[coreNum].end()){
+			it1->second = tend;
+			changedExistedDiap = true;
+			currentDiap = it1;
+		}
+
+		auto it2 = find_if(currentBusyIntervals[coreNum].begin(), currentBusyIntervals[coreNum].end(),findBegin(tend));
+		if (it2!=currentBusyIntervals[coreNum].end()){
+			if (changedExistedDiap){
+				it1->second = it2->second;
+				currentBusyIntervals[coreNum].erase(it2);
+			}
+			else {
+				it2->first = tbegin;
+				changedExistedDiap = true;
+				currentDiap = it2;
+			}
+		}
+
+		if (changedExistedDiap)
+		{
+			tbegin = currentDiap->first;
+			tend = currentDiap->second;
+		}
+
+		auto intersect = 
+			find_if(currentBusyIntervals[coreNum].begin(), currentBusyIntervals[coreNum].end(), findIntersectsDiap(tbegin, tend));
+		if (intersect!=currentBusyIntervals[coreNum].end()){
+			if (changedExistedDiap){
+				currentDiap->second = intersect->second;
+				currentBusyIntervals[coreNum].erase(intersect);
+			}
+			else {
+				intersect->first = tbegin;
+				changedExistedDiap = true;
+			}
+		}
+		
+		
 		pair <int,int> newDiap;
 		newDiap.first = tbegin; newDiap.second = tend;
-		busyIntervals[coreNum+1].push_back(newDiap);
-		sort(busyIntervals[coreNum+1].begin(), busyIntervals[coreNum+1].end(), busyIntervalsAsc);
+				
+		if (tend%delta!=0) 
+			throw UserException("Resource::AddDiap() : fraction tend");
+		if (coreNum == 0)
+			throw UserException("Resource::AddDiap() : zero value of coreNum");
+		if (!changedExistedDiap) 
+			currentBusyIntervals[coreNum].push_back(newDiap);
+		sort(currentBusyIntervals[coreNum].begin(), currentBusyIntervals[coreNum].end(), busyIntervalsAsc);
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;

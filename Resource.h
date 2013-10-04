@@ -9,12 +9,13 @@ class Resource{
 	int number;
 	unsigned int coresCount;
 	std::vector<unsigned int> forcedBricks;
-	std::map <int,std::vector<std::pair<int,int>>> busyIntervals; // (coreNum), (tBegin, tEnd), (tbegin, tend) for busy intervals
+	// (coreNum), (tBegin, tEnd), (tbegin, tend) for busy intervals 
 	std::map <int,std::vector<std::pair<int,int>>> initBusyIntervals;
 	std::map <int,std::vector<std::pair<int,int>>> currentBusyIntervals;
+	std::map <int,std::vector<std::pair<int,int>>> onlyFirstBusyIntervals;
 	public:
 	Resource(int,int,std::map <int,std::vector<std::pair<int,int>>>);
-	std::map <int,std::vector<std::pair<int,int>>>* GetBusyIntervals(){return &busyIntervals;}
+	std::map <int,std::vector<std::pair<int,int>>>* GetBusyIntervals(){return &initBusyIntervals;}
 	int GetCoresCount(){return coresCount;}
 	void CorrectBusyIntervals(const std::vector<int>& );
 	// WHY / WHAA
@@ -23,13 +24,16 @@ class Resource{
 	void GetFreeTime(std::vector <std::vector<int>> & vec);
 	int GetPlacement(const int&, const int&, const unsigned int&, std::vector<int>&);
 	int GetCoreNearestBorder(const int&, const int&);
-	void ResetBusyIntervals(){currentBusyIntervals = busyIntervals;}
+	void ResetBusyIntervals(){currentBusyIntervals = initBusyIntervals;}
 	void SetForcedBricks();
 	void AddForcedBricks(const std::vector<unsigned int>&);
 	std::vector <unsigned int> GetNextStage(const std::vector<unsigned int> &);
 	std::vector <unsigned int> GetForcedBricks(){return forcedBricks;}
 	void AddDiap(int stageBegin, int stageCount, int coreNum);
-	void SetInitBusyIntervals(){busyIntervals = initBusyIntervals;}
-	void FixBusyIntervals(){initBusyIntervals = busyIntervals;}
+	void SetInitBusyIntervals(){currentBusyIntervals = initBusyIntervals;}
+	void SetFirstBusyIntervals(){currentBusyIntervals = onlyFirstBusyIntervals; initBusyIntervals = onlyFirstBusyIntervals;}
+	void FixBusyIntervals(){
+		initBusyIntervals = currentBusyIntervals;
+	}
 	
 };

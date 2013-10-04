@@ -34,15 +34,12 @@ class Model
 	vector <vector<vector<int>>> controls; 
 	vector <vector<int>> nextStateNumbers;
 	vector <vector<int>> states; // (stateNum for P1, stateNum for P2, ...)
-	vector <pair<vector<int>,vector<int>>>fullUsedNums;
 	BackBellmanInfo FullInfo;
 	string xmlBaseName;
 	// methods
 	void InitResources(string);
 	void InitWorkflows(string);
-	bool CheckState (const unsigned int state, const unsigned int stage,timeCore& typeCoresPerType, 
-		vector <vector<int>>& packagesCoreNums);
-	bool CheckControl(const unsigned int &state, const unsigned int &control, const unsigned int &stage, timeCore&, 
+	bool FindConcretization(const unsigned int &state, const int &control, const unsigned int &stage, timeCore&, 
 		vector <vector<int>>& packagesCoreNums);
 	void SetForcedBricks();
 	double efficiencyFunction(double x) { return (koeff*(1-x)); }
@@ -59,8 +56,9 @@ class Model
 	void GetStageInformation(int stage);
 	double DirectBellman(int wfNum);
 	void BackBellmanProcedure();
-	void AddDiaps(int beginIndex, int wfNum);
 	void ResetBusyIntervals();
+	void FixNewBusyIntervals();
+	void SetFirstBusyIntervals();
 	int GetResourceType(int number);
 	int GetResourceTypeBeginIndex(int type);
 	void Model::StagesCoresToXML(ofstream&f, int currentWfNum);

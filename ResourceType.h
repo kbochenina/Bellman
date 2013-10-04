@@ -47,5 +47,6 @@ public:
 	void AddDiaps(int stageBegin, int stageCount, vector<int>& cores);
 	void SetInitBusyIntervals();
 	void FixBusyIntervals();
+	void SetFirstBusyIntervals();
 };
 

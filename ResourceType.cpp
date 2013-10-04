@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include "UserException.h"
 using namespace std;
 
 bool SortPair(const std::pair <int, int> &p1, const std::pair <int, int> &p2)
@@ -185,7 +186,7 @@ int ResourceType::GetRightBorderForOneCore(const unsigned int &core, const unsig
 }
 
 int  ResourceType::GetLeftBorderForOneCore(const unsigned int &core, const unsigned int &stage){
-	if (allCoresFreeTimes[stage][core]==0) return 0;
+	if (allCoresFreeTimes[stage][core]==0) return -1;
 	int currentStage = stage;
 	while (currentStage-1 >= 0 && allCoresFreeTimes[currentStage-1][core] == delta) 
 		currentStage--;
@@ -238,21 +239,30 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 			}
 		}
 		packageIndexesTimeDesc.push_back(minIndex);
+		double execTime = timeCores[i].first;
+		int beginStage = stage - (int)execTime/delta;
+		if ((int)execTime%delta==0) beginStage++;
+		int beginTime = beginStage*delta;
 		// j - number of core
 		for (int j = 0; j < GetCoresCount(); j++) {
 			// if core isn't busy on this stage
 			if (rightBorders[j] != 0 && find (usedNums.begin(), usedNums.end(), j) == usedNums.end()){
 				// if package can be placed on this core, add core number to possiblePackagesCores
 				if (isCheckedForState){
-					if (leftBorders[j] + timeCores[i].first <= rightBorders[j] || rightBorders[j]==T)
+					if (leftBorders[j]!=-1){
+					if (beginTime >= leftBorders[j] && (beginTime + execTime <= rightBorders[j] || rightBorders[j]==T))
 						possiblePackagesCores[i].push_back(j);
+					}
 				}
 				else {
-					if (stage * delta + timeCores[i].first <= rightBorders[j] || rightBorders[j]==T)
+					if (stage * delta + execTime <= rightBorders[j] || rightBorders[j]==T)
 						possiblePackagesCores[i].push_back(j);
 				}
 			}
 		}
+		if (possiblePackagesCores[i].size()==0)
+			return false;
+
 		// ordering in rightBorders[j] asc
 		for (int i1 = 0; i1 < possiblePackagesCores[i].size()-1; i1++){
 			for (int i2 = i1+1; i2 < possiblePackagesCores[i].size(); i2++){
@@ -283,8 +293,8 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 				if (find (usedNums.begin(), usedNums.end(), currentCore) == usedNums.end()){
 						numberAdopted++;
 						coresViewed++;
-						onePackageUsedNums.push_back(j);
-							
+						onePackageUsedNums.push_back(currentCore);
+						usedNums.push_back(currentCore);	
 						if (canExecuteOnDiffResources==false){
 						// if currentCore is not last in possiblePackageCores
 							if (j!=possiblePackagesCores[index].size()-1
@@ -300,9 +310,6 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 				}
 				if (numberAdopted==coreNum) {
 					oneTypeCoreNums[index] = onePackageUsedNums;
-					// add to busy intervals
-					if (stage + numStages > stages) numStages = stages - stage;
-					AddDiaps(stage, numStages, onePackageUsedNums);
 					break;
 				}
 			}
@@ -314,13 +321,22 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	return true;
 }
 
-void ResourceType::AddDiaps(int stageBegin, int stageCount, vector<int>& cores){
+void ResourceType::AddDiaps(int stageBegin, int execTime, vector<int>& cores){
+	try{
 	for (vector<int>::iterator it = cores.begin(); it!= cores.end(); it++){
+		if (*it < 0 || *it > resources.size() * numCoresPerOneRes - 1)
+			throw UserException("ResourceType::AddDiaps() - wrong core number");
 		int resourceIndex = GetResourceIndex(*it);
 		int coreNum = *it - resourceIndex * numCoresPerOneRes;
-		resources[resourceIndex].AddDiap(stageBegin, stageCount, coreNum);
+		resources[resourceIndex].AddDiap(stageBegin, execTime, coreNum);
 	}
 	SetFreeTimeEnds();
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 int ResourceType::GetResourceIndex(int core){
@@ -333,10 +349,16 @@ int ResourceType::GetResourceIndex(int core){
 void ResourceType::SetInitBusyIntervals(){
 	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
 		it->SetInitBusyIntervals();
+	SetFreeTimeEnds();
 }
 
 void ResourceType::FixBusyIntervals(){
 	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
 		it->FixBusyIntervals();
+}
+
+void ResourceType::SetFirstBusyIntervals(){
+	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
+		it->SetFirstBusyIntervals();
 }
 
