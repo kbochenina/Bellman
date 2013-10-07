@@ -9,6 +9,7 @@
 	ofstream ex;
 	vector<int> stageBorders;
 	bool canExecuteOnDiffResources;
+	int outputFileNumber;
 	
 int _tmain(int argc, wchar_t** argv)
 {
@@ -46,6 +47,7 @@ int _tmain(int argc, wchar_t** argv)
 		sXML(fileXML.begin(), fileXML.end());*/
 		string s(fileSettings.begin(),fileSettings.end());
 		//ex << sW << endl;
+		outputFileNumber = 0;
 		Model m;
 		//m.Init(sR, sW, sS, sXML);
 		m.InitSettings(s);

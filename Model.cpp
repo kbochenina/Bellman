@@ -586,7 +586,7 @@ void Model::StagedScheme(int firstWfNum){
 		for (unsigned int i = 0; i < Workflows.size(); i++){
 				Workflows[i]->SetIsPackageInit();
 				Workflows[i]->SetPackagesStates();
-				Workflows[i]->PrintExecTime();
+				//Workflows[i]->PrintExecTime();
 				int t = clock();
 				Workflows[i]->SetFullPackagesStates(0, states, controls, nextStateNumbers);
 				for (int j = 0; j < stages; j++) 
@@ -604,11 +604,11 @@ void Model::StagedScheme(int firstWfNum){
 					allStagesCores = stagesCores;
 					usedWFNums.push_back(firstWfNum);
 					BellmanToXML(true);
-					std::system("pause");
+					//std::system("pause");
 					stagesCores.clear();
 					FixNewBusyIntervals();
 					BellmanToXML(true);
-					std::system("pause");
+					//std::system("pause");
 				}
 				states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
 		}
@@ -620,6 +620,7 @@ void Model::StagedScheme(int firstWfNum){
 			res << "))";
 		}
 		res << endl;
+		vector <vector <busyIntervals>> bestBusyIntervals;
 		vector <tuple<int,int,vector<int>>> bestStagesCores;
 		while (usedWFNums.size() != Workflows.size()){
 			double maxEff = 0.0;
@@ -635,6 +636,8 @@ void Model::StagedScheme(int firstWfNum){
 						maxEff = currentEff;
 						bestWfNum = i;
 						bestStagesCores = stagesCores;
+						bestBusyIntervals.clear();
+						GetBestBusyIntervals(bestBusyIntervals);
 					}
 					states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
 				}
@@ -654,19 +657,17 @@ void Model::StagedScheme(int firstWfNum){
 			}
 			res << endl;
 			BellmanToXML(true);
-			std::system("pause");
+			//std::system("pause");
 			stagesCores.clear();
+			SetBestBusyIntervals(bestBusyIntervals);
 			FixNewBusyIntervals();
 			BellmanToXML(true);
-			std::system("pause");
+			//std::system("pause");
 		}
 		usedNums = usedWFNums;
 		SetFirstBusyIntervals();
 		stagesCores = allStagesCores;
 		BellmanToXML(false);
-
-		//int t = clock();
-		//cout << "Time of reading data " << (clock()-t)/1000.0 << "sec" << endl;
 		res.close();
 		
 	}
@@ -806,7 +807,7 @@ double Model::DirectBellman(int wfNum){
 }
 
 void Model::BellmanToXML(bool isOne){
-	string name = xmlBaseName + "_DP_.jed";
+	string name = xmlBaseName + "DP_" + to_string((long long)outputFileNumber++) + ".jed";
 	ofstream f(name);
 	MetaXMLInfo(f);
 	f << "\t<node_infos>\n";
@@ -919,6 +920,20 @@ void Model::MetaXMLInfo(ofstream &f){
 	f << "\t</grid_info>\n";
 }
 
+void Model::GetBestBusyIntervals(vector<vector<busyIntervals>> & out){
+	out.resize(Resources.size());
+	for (vector<Resource*>::size_type res = 0; res < Resources.size(); res++){
+		Resources[res]->GetCurrentBusyIntervals(out[res]);
+	}
+}
+
+void Model::SetBestBusyIntervals(vector<vector<busyIntervals>> & in){
+	for (vector<Resource*>::size_type res = 0; res < Resources.size(); res++){
+		Resources[res]->SetCurrentBusyIntervals(in[res]);
+	}
+}
+
+
 void Model::BusyToXML(ofstream &f){
 	int inc = 0;
 	
@@ -963,8 +978,8 @@ void Model::BackBellmanProcedure(){
 // stages are numbered fom zero
 void Model::GetStageInformation(int stage){
 	int tbegin = stage * delta;
-	string fname = "stage" + to_string((long long)stage+1) + ".txt";
-	ofstream f(fname);
+	//string fname = "stage" + to_string((long long)stage+1) + ".txt";
+	//ofstream f(fname);
 	bool debugFlag = false;
 	int num = 0; // number of correct states for this stage
 	// for all states
@@ -1011,15 +1026,15 @@ void Model::GetStageInformation(int stage){
 			stateCoresNums.clear();
 		}
 		FullInfo[stage][i] = make_pair(uopt, maxEff);
-		f << uopt << " ";
+		/*f << uopt << " ";
 		Workflows[currentWfNum]->PrintControl(controls[i][uopt], f);
 		f << nextStateNumbers[i][uopt] << " ";
-		Workflows[currentWfNum]->PrintState(states[nextStateNumbers[i][uopt]], f);
+		Workflows[currentWfNum]->PrintState(states[nextStateNumbers[i][uopt]], f);*/
 		if (stage==0) break;
 	}		
 	
 	cout << "Stage " << stage << " finished" << endl;
-	f.close();
+//	f.close();
 	
 }
 

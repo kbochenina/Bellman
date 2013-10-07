@@ -39,7 +39,8 @@ public:
 	int GetCoresCount();
 	double GetPerf(){return perf;}
 	bool IsPossible(int execTime, int stage, int numCores);
-	
+	void GetCurrentBusyIntervals(vector<map <int,std::vector<std::pair<int,int>>>> & out);
+	void SetCurrentBusyIntervals(vector<map <int,std::vector<std::pair<int,int>>>> & out);
 	int GetFinalStage(const std::vector<int> &execTimes, const std::vector<int> &stages, const std::vector<int>&numCores, 
 		const std::vector <int>& addForcedBricks, std::vector <unsigned int>&, std::vector <unsigned int>&, std::vector<std::vector<int>>&); // if return 0 then no possible combinations
 	void SetChildForcedBricks(){for (unsigned int i = 0; i < resources.size(); i++) resources[i].SetForcedBricks();}

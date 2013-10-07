@@ -15,6 +15,8 @@ class Resource{
 	std::map <int,std::vector<std::pair<int,int>>> onlyFirstBusyIntervals;
 	public:
 	Resource(int,int,std::map <int,std::vector<std::pair<int,int>>>);
+	void GetCurrentBusyIntervals(std::map <int,std::vector<std::pair<int,int>>> & out){out = currentBusyIntervals;}
+	void SetCurrentBusyIntervals(std::map <int,std::vector<std::pair<int,int>>> & in){currentBusyIntervals = in;}
 	std::map <int,std::vector<std::pair<int,int>>>* GetBusyIntervals(){return &initBusyIntervals;}
 	int GetCoresCount(){return coresCount;}
 	void CorrectBusyIntervals(const std::vector<int>& );

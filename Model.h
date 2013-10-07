@@ -10,10 +10,13 @@ typedef pair <int, double> StateInformation; // (number of uopt, max eff on this
 typedef vector <StateInformation> StageInformation;
 typedef vector <StageInformation> BackBellmanInfo;
 typedef vector<vector<pair<double, unsigned int>>> timeCore;
+typedef std::map <int,std::vector<std::pair<int,int>>> busyIntervals;
+
 
 extern int T, delta, stages;
 extern vector<int> stageBorders;
 extern bool canExecuteOnDiffResources; // if true one package can execute on some cores of different resources of one type
+extern int outputFileNumber; // current count of xml files
 
 class Model
 {
@@ -63,6 +66,8 @@ class Model
 	int GetResourceTypeBeginIndex(int type);
 	void Model::StagesCoresToXML(ofstream&f, int currentWfNum);
 	void Model::SetOneTypeCoreNums(int typeIndex, vector<int> &addForbiddenCoreNums, vector<int>& out);
+	void GetBestBusyIntervals(vector<vector<busyIntervals>> & out);
+	void SetBestBusyIntervals(vector<vector<busyIntervals>> & in);
 public:
 	Model(){}
 	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO

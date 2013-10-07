@@ -228,16 +228,17 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		for (int i = 0; i < GetCoresCount(); i++) 
 			leftBorders.push_back(GetLeftBorderForOneCore(i,stage));
 	}
-	
+	int minTime = T, minIndex = -1;
 	// find the pool of possible core numbers for each package
 	for (vector<pair<double,unsigned int>>::size_type i = 0; i < timeCores.size(); i++){
-		int minTime = T, minIndex = -1;
 		for (vector<pair<double,unsigned int>>::size_type sort = i; sort < timeCores.size(); sort++){
 			if (timeCores[sort].first < minTime && find(packageIndexesTimeDesc.begin(), packageIndexesTimeDesc.end(), sort) == packageIndexesTimeDesc.end()){
 				minTime = timeCores[sort].first;
 				minIndex = sort;
 			}
 		}
+		if (minIndex < 0 || minIndex > timeCores.size()-1) 
+			throw UserException("ResourceType::Check(): wrong timeCores index");
 		packageIndexesTimeDesc.push_back(minIndex);
 		double execTime = timeCores[i].first;
 		int beginStage = stage - (int)execTime/delta;
@@ -362,3 +363,15 @@ void ResourceType::SetFirstBusyIntervals(){
 		it->SetFirstBusyIntervals();
 }
 
+void ResourceType::GetCurrentBusyIntervals(vector<map <int,std::vector<std::pair<int,int>>>> & out){
+	out.resize(resources.size());
+	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++){
+		it->GetCurrentBusyIntervals(out[distance(resources.begin(),it)]);
+	}
+}
+
+void ResourceType::SetCurrentBusyIntervals(vector<map <int,std::vector<std::pair<int,int>>>> & in){
+	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++){
+		it->SetCurrentBusyIntervals(in[distance(resources.begin(),it)]);
+	}
+}
