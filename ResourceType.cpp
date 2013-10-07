@@ -231,6 +231,7 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	int minTime = T, minIndex = -1;
 	// find the pool of possible core numbers for each package
 	for (vector<pair<double,unsigned int>>::size_type i = 0; i < timeCores.size(); i++){
+		minTime = T;
 		for (vector<pair<double,unsigned int>>::size_type sort = i; sort < timeCores.size(); sort++){
 			if (timeCores[sort].first < minTime && find(packageIndexesTimeDesc.begin(), packageIndexesTimeDesc.end(), sort) == packageIndexesTimeDesc.end()){
 				minTime = timeCores[sort].first;

@@ -1,4 +1,4 @@
-canExecuteOnDiffResources=1
+canExecuteOnDiffResources=0
 InputFolderPath="InputFiles"
 DebugInfoFile="defaultExperRes.txt"
 ResultFile="result.txt"

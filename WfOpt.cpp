@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "Model.h"
 #include <cstdlib>
+#include "direct.h"
 
 	int T, delta, stages;
 	ofstream ex;
@@ -41,6 +42,7 @@ int _tmain(int argc, wchar_t** argv)
 		
 		
 		*/
+		
 		double start = clock();
 		/* string sR(fileResources.begin(), fileResources.end()), 
 		sW(fileWorkflows.begin(), fileWorkflows.end()), sS(fileSettings.begin(),fileSettings.end()), 
@@ -51,7 +53,11 @@ int _tmain(int argc, wchar_t** argv)
 		Model m;
 		//m.Init(sR, sW, sS, sXML);
 		m.InitSettings(s);
-		m.StagedScheme(0);
+		_mkdir("result");
+		_chdir("result");
+		m.SetData();
+		//for (int i = 0; i < m.GetWorkflowNum(); i++)
+			m.StagedScheme(1);
 		/*
 		
 		ex.close();*/

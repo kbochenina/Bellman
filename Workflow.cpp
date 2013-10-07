@@ -74,7 +74,7 @@ void Workflow::SetFullPackagesStates(int currentPackage, vector <vector<int>>& p
 			for (int i = 0; i < packages[currentPackage]->GetStatesCount(); i++) 
 				currentPackageStates.push_back(i);
 			SetFullPackagesStates(currentPackage+1, packagesStates, controls, nextStateNumbers);
-			cout << "states for package " << currentPackage+1 << " finished (elapsed time - " << (clock()-prevBeginTime)/1000.0 << " sec)" << endl;
+		//	cout << "states for package " << currentPackage+1 << " finished (elapsed time - " << (clock()-prevBeginTime)/1000.0 << " sec)" << endl;
 			prevBeginTime = clock();
 			for (unsigned int i = 0; i < currentPackageStates.size(); i++){
 				for (unsigned int j = 0; j < packagesStates.size(); j++){

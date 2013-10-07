@@ -73,8 +73,9 @@ public:
 	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO
 	void Init (string resFile, string wfFile, string settingsFile, string xmlFile);
 	void InitSettings(string);
+	void SetData();
 	double Greedy(int uopt, double currentEff);
-	
+	int GetWorkflowNum(){return Workflows.size();}
 	~Model(void);
 };
 

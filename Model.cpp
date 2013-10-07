@@ -11,7 +11,7 @@ bool SortPairs(pair <int, double> p1, pair <int,double> p2){
 }
 
 void Model::Init (string resFile, string wfFile, string settingsFile, string xmlFile){
-	InitResources(resFile); cout << "Initialization of resources ended" << endl;
+	InitResources(resFile); 
 	FullInfo.resize(stages);
 	InitWorkflows(wfFile); 
 	InitSettings(settingsFile);
@@ -575,43 +575,53 @@ void Model::InitResources(string f){
 	}
 }
 
+void Model::SetData(){
+	for (unsigned int i = 0; i < Workflows.size(); i++){
+		Workflows[i]->SetIsPackageInit();
+		Workflows[i]->SetPackagesStates();
+		//Workflows[i]->PrintExecTime();
+		int t = clock();
+		Workflows[i]->SetFullPackagesStates(0, states, controls, nextStateNumbers);
+		for (int j = 0; j < stages; j++) 
+			FullInfo[j].resize(states.size());
+		//cout << "Time of SetFullPackagesStates() " << (clock()-t)/1000.0 << endl;
+		//t = clock();
+		Workflows[i]->PrintPackagesStates(states);
+		//cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
+		Workflows[i]->PrintControls(states,controls, nextStateNumbers);
+		//cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;
+		states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
+	}
+}
+
 // firstWfNum from ZERO
 void Model::StagedScheme(int firstWfNum){
 	try{
-		ofstream res("staged_schemeRes.txt");
+		cout << "Attempt: " << firstWfNum << endl;
+		string resFileName = "staged_scheme_" + to_string((long long)firstWfNum) + ".txt";
+		ofstream res(resFileName);
 		if (res.fail()) throw UserException("Unable to create res file");
 		vector <int>usedWFNums;
 		string wrongFirstNum = "StagedScheme(): wrong firstWFNum";
+		vector<double> eff;
+	
 		if (firstWfNum < 0 || firstWfNum > Workflows.size()-1) throw UserException(wrongFirstNum);
-		for (unsigned int i = 0; i < Workflows.size(); i++){
-				Workflows[i]->SetIsPackageInit();
-				Workflows[i]->SetPackagesStates();
-				//Workflows[i]->PrintExecTime();
-				int t = clock();
-				Workflows[i]->SetFullPackagesStates(0, states, controls, nextStateNumbers);
-				for (int j = 0; j < stages; j++) 
-					FullInfo[j].resize(states.size());
-				cout << "Time of SetFullPackagesStates() " << (clock()-t)/1000.0 << endl;
-				t = clock();
-				Workflows[i]->PrintPackagesStates(states);
-				cout << "Time of PrintPackagesStates() " << (clock()-t)/1000.0 << endl;
-				Workflows[i]->PrintControls(states,controls, nextStateNumbers);
-				cout << "Time of PrintControls() " << (clock()-t)/1000.0 << endl;
-				if (i==firstWfNum) {
-					currentWfNum = firstWfNum;
-					BackBellmanProcedure();
-					DirectBellman(i);
-					allStagesCores = stagesCores;
-					usedWFNums.push_back(firstWfNum);
-					BellmanToXML(true);
-					//std::system("pause");
-					stagesCores.clear();
-					FixNewBusyIntervals();
-					BellmanToXML(true);
-					//std::system("pause");
-				}
-				states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
-		}
+		
+		ReadData(firstWfNum);
+		currentWfNum = firstWfNum;
+		BackBellmanProcedure();
+		eff.push_back(DirectBellman(firstWfNum));
+		allStagesCores = stagesCores;
+		usedWFNums.push_back(firstWfNum);
+		BellmanToXML(true);
+		//std::system("pause");
+		stagesCores.clear();
+		FixNewBusyIntervals();
+		BellmanToXML(true);
+		//std::system("pause");
+		
+		states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
+		
 		res << "WF " << firstWfNum << endl;
 		for (vector <tuple<int,int,vector<int>>>::iterator it = allStagesCores.begin(); it!= allStagesCores.end(); it++){
 			res << "(" << it->get<0>() << " " << it->get<1>() << " (";
@@ -648,6 +658,7 @@ void Model::StagedScheme(int firstWfNum){
 			usedNums = usedWFNums;
 			stagesCores = bestStagesCores;
 			currentWfNum = bestWfNum;
+			eff.push_back(maxEff);
 			res << "WF " << bestWfNum << endl;
 			for (vector <tuple<int,int,vector<int>>>::iterator it = bestStagesCores.begin(); it!= bestStagesCores.end(); it++){
 				res << "(" << it->get<0>() << " " << it->get<1>() << " (";
@@ -669,7 +680,18 @@ void Model::StagedScheme(int firstWfNum){
 		stagesCores = allStagesCores;
 		BellmanToXML(false);
 		res.close();
-		
+		cout << "Attempt " << firstWfNum << endl << "Workflow order: " ;
+		for (vector<int>::size_type i = 0; i < usedNums.size(); i++){
+			cout << usedNums[i] << " ";
+		}
+		cout << endl << "Efficiencies: " ;
+		double sum = 0.0;
+		for (vector<int>::size_type i = 0; i < eff.size(); i++){
+			sum+=eff[i];
+			cout << eff[i] << " ";
+		}
+		cout << "Max eff: " << sum << endl << endl;
+		SetFirstBusyIntervals();
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
@@ -1033,7 +1055,7 @@ void Model::GetStageInformation(int stage){
 		if (stage==0) break;
 	}		
 	
-	cout << "Stage " << stage << " finished" << endl;
+	//cout << "Stage " << stage << " finished" << endl;
 //	f.close();
 	
 }
