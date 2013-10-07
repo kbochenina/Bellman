@@ -15,6 +15,7 @@
 *.opensdf
 *.sdf
 *.txt
+*.suo
 
 #Unused directories
 /Debug
