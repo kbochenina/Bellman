@@ -7,6 +7,8 @@
 #include "UserException.h"
 using namespace std;
 
+extern bool directBellman;
+
 bool SortPair(const std::pair <int, int> &p1, const std::pair <int, int> &p2)
 {
 	return p1.second > p2.second;
@@ -219,6 +221,8 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 	// indexes of packages in timeCores sorted in descending order by time
 	vector <int> packageIndexesTimeDesc;
 	
+	
+
 	vector <int> rightBorders, leftBorders;
 	for (int i = 0; i < GetCoresCount(); i++) 
 		rightBorders.push_back(GetRightBorderForOneCore(i,stage));
@@ -228,19 +232,20 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		for (int i = 0; i < GetCoresCount(); i++) 
 			leftBorders.push_back(GetLeftBorderForOneCore(i,stage));
 	}
-	int minTime = T, minIndex = -1;
+
+	int maxTime = 0, maxIndex = -1;
 	// find the pool of possible core numbers for each package
 	for (vector<pair<double,unsigned int>>::size_type i = 0; i < timeCores.size(); i++){
-		minTime = T;
+		maxTime = 0;
 		for (vector<pair<double,unsigned int>>::size_type sort = i; sort < timeCores.size(); sort++){
-			if (timeCores[sort].first < minTime && find(packageIndexesTimeDesc.begin(), packageIndexesTimeDesc.end(), sort) == packageIndexesTimeDesc.end()){
-				minTime = timeCores[sort].first;
-				minIndex = sort;
+			if (timeCores[sort].first > maxTime && find(packageIndexesTimeDesc.begin(), packageIndexesTimeDesc.end(), sort) == packageIndexesTimeDesc.end()){
+				maxTime = timeCores[sort].first;
+				maxIndex = sort;
 			}
 		}
-		if (minIndex < 0 || minIndex > timeCores.size()-1) 
+		if (maxIndex < 0 || maxIndex > timeCores.size()-1) 
 			throw UserException("ResourceType::Check(): wrong timeCores index");
-		packageIndexesTimeDesc.push_back(minIndex);
+		packageIndexesTimeDesc.push_back(maxIndex);
 		double execTime = timeCores[i].first;
 		int beginStage = stage - (int)execTime/delta;
 		if ((int)execTime%delta==0) beginStage++;
@@ -277,7 +282,7 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		}
 	}
 	
-
+	
 
 	// for each packages
 	for (vector <vector<int>>::size_type i = 0; i < packageIndexesTimeDesc.size(); i++){
@@ -319,7 +324,44 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		}
 		if (numberAdopted!=coreNum) return false;
 	}
-			
+	
+	if (directBellman == true && stage == 7 && isCheckedForState){
+		ofstream b("bugs.txt");
+		b << "Time cores: " << endl;
+		vector<pair<double,unsigned int>>::const_iterator it = timeCores.begin();
+		for (; it != timeCores.end(); it++){
+			b << "(" << it->first << " " << it->second << ")"; 
+		}
+		b << endl << "Left borders: " ;
+		for (int i = 0; i < GetCoresCount(); i++) 
+			b << leftBorders[i] << " ";
+		b << endl;
+		b << "Right borders: " ;
+		for (int i = 0; i < GetCoresCount(); i++) 
+			b << rightBorders[i] << " ";
+		b << endl;
+		vector <vector<int>>::iterator p = possiblePackagesCores.begin();
+		for (; p!=possiblePackagesCores.end(); p++){
+			vector <int>::iterator val = p->begin();
+			for (; val!=p->end(); val++)
+				b << *val << " " ;
+			b << endl;
+		}
+		b << "PackagesIndexesTimeDesc:";
+		vector <int>::iterator pt = packageIndexesTimeDesc.begin();
+		for (; pt != packageIndexesTimeDesc.end(); pt++)
+			b << *pt << " "; 
+		b << endl << "OneTypeCoreNums: " << endl;
+		p = oneTypeCoreNums.begin();
+		for (; p!=oneTypeCoreNums.end(); p++){
+			vector <int>::iterator val = p->begin();
+			for (; val!=p->end(); val++)
+				b << *val << " " ;
+			b << endl;
+		}
+		b.close();
+	}
+
 	return true;
 }
 
@@ -362,6 +404,8 @@ void ResourceType::FixBusyIntervals(){
 void ResourceType::SetFirstBusyIntervals(){
 	for (vector<Resource>::iterator it = resources.begin(); it!= resources.end(); it++)
 		it->SetFirstBusyIntervals();
+	CorrectBusyIntervals(stageBorders);
+	SetFreeTimeEnds();
 }
 
 void ResourceType::GetCurrentBusyIntervals(vector<map <int,std::vector<std::pair<int,int>>>> & out){

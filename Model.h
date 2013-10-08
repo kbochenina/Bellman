@@ -68,6 +68,7 @@ class Model
 	void Model::SetOneTypeCoreNums(int typeIndex, vector<int> &addForbiddenCoreNums, vector<int>& out);
 	void GetBestBusyIntervals(vector<vector<busyIntervals>> & out);
 	void SetBestBusyIntervals(vector<vector<busyIntervals>> & in);
+	void Greedy(int wfNum);
 public:
 	Model(){}
 	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO

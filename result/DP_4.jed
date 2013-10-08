@@ -1014,6 +1014,58 @@
 			</configuration>
 		</node_statistics>
 		<node_statistics>
+			<node_property name="id" value="2"/>
+			<node_property name="type" value="computation"/>
+			<node_property name="start_time" value="0"/>
+			<node_property name="end_time" value="7052"/>
+			<configuration>
+			  <conf_property name="cluster_id" value="0"/>
+			  <conf_property name="host_nb" value="1"/>
+			  <host_lists>
+			    <hosts start="17" nb="1"/>
+			  </host_lists>
+			</configuration>
+		</node_statistics>
+		<node_statistics>
+			<node_property name="id" value="3"/>
+			<node_property name="type" value="computation"/>
+			<node_property name="start_time" value="0"/>
+			<node_property name="end_time" value="6939"/>
+			<configuration>
+			  <conf_property name="cluster_id" value="0"/>
+			  <conf_property name="host_nb" value="1"/>
+			  <host_lists>
+			    <hosts start="23" nb="1"/>
+			  </host_lists>
+			</configuration>
+		</node_statistics>
+		<node_statistics>
+			<node_property name="id" value="3"/>
+			<node_property name="type" value="computation"/>
+			<node_property name="start_time" value="0"/>
+			<node_property name="end_time" value="6939"/>
+			<configuration>
+			  <conf_property name="cluster_id" value="0"/>
+			  <conf_property name="host_nb" value="1"/>
+			  <host_lists>
+			    <hosts start="31" nb="1"/>
+			  </host_lists>
+			</configuration>
+		</node_statistics>
+		<node_statistics>
+			<node_property name="id" value="3"/>
+			<node_property name="type" value="computation"/>
+			<node_property name="start_time" value="0"/>
+			<node_property name="end_time" value="6939"/>
+			<configuration>
+			  <conf_property name="cluster_id" value="0"/>
+			  <conf_property name="host_nb" value="1"/>
+			  <host_lists>
+			    <hosts start="16" nb="1"/>
+			  </host_lists>
+			</configuration>
+		</node_statistics>
+		<node_statistics>
 			<node_property name="id" value="3"/>
 			<node_property name="type" value="computation"/>
 			<node_property name="start_time" value="0"/>
@@ -1027,45 +1079,6 @@
 			</configuration>
 		</node_statistics>
 		<node_statistics>
-			<node_property name="id" value="3"/>
-			<node_property name="type" value="computation"/>
-			<node_property name="start_time" value="0"/>
-			<node_property name="end_time" value="6939"/>
-			<configuration>
-			  <conf_property name="cluster_id" value="0"/>
-			  <conf_property name="host_nb" value="1"/>
-			  <host_lists>
-			    <hosts start="25" nb="1"/>
-			  </host_lists>
-			</configuration>
-		</node_statistics>
-		<node_statistics>
-			<node_property name="id" value="3"/>
-			<node_property name="type" value="computation"/>
-			<node_property name="start_time" value="0"/>
-			<node_property name="end_time" value="6939"/>
-			<configuration>
-			  <conf_property name="cluster_id" value="0"/>
-			  <conf_property name="host_nb" value="1"/>
-			  <host_lists>
-			    <hosts start="22" nb="1"/>
-			  </host_lists>
-			</configuration>
-		</node_statistics>
-		<node_statistics>
-			<node_property name="id" value="3"/>
-			<node_property name="type" value="computation"/>
-			<node_property name="start_time" value="0"/>
-			<node_property name="end_time" value="6939"/>
-			<configuration>
-			  <conf_property name="cluster_id" value="0"/>
-			  <conf_property name="host_nb" value="1"/>
-			  <host_lists>
-			    <hosts start="29" nb="1"/>
-			  </host_lists>
-			</configuration>
-		</node_statistics>
-		<node_statistics>
 			<node_property name="id" value="1"/>
 			<node_property name="type" value="computation"/>
 			<node_property name="start_time" value="3600"/>
@@ -1075,19 +1088,6 @@
 			  <conf_property name="host_nb" value="1"/>
 			  <host_lists>
 			    <hosts start="7" nb="1"/>
-			  </host_lists>
-			</configuration>
-		</node_statistics>
-		<node_statistics>
-			<node_property name="id" value="2"/>
-			<node_property name="type" value="computation"/>
-			<node_property name="start_time" value="0"/>
-			<node_property name="end_time" value="7052"/>
-			<configuration>
-			  <conf_property name="cluster_id" value="0"/>
-			  <conf_property name="host_nb" value="1"/>
-			  <host_lists>
-			    <hosts start="17" nb="1"/>
 			  </host_lists>
 			</configuration>
 		</node_statistics>

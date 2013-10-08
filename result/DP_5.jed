@@ -340,6 +340,19 @@
 		<node_statistics>
 			<node_property name="id" value="16"/>
 			<node_property name="type" value="busy"/>
+			<node_property name="start_time" value="0"/>
+			<node_property name="end_time" value="7200"/>
+			<configuration>
+			  <conf_property name="cluster_id" value="0"/>
+			  <conf_property name="host_nb" value="1"/>
+			  <host_lists>
+			    <hosts start="16" nb="1"/>
+			  </host_lists>
+			</configuration>
+		</node_statistics>
+		<node_statistics>
+			<node_property name="id" value="16"/>
+			<node_property name="type" value="busy"/>
 			<node_property name="start_time" value="8948"/>
 			<node_property name="end_time" value="21600"/>
 			<configuration>
@@ -444,19 +457,6 @@
 		<node_statistics>
 			<node_property name="id" value="22"/>
 			<node_property name="type" value="busy"/>
-			<node_property name="start_time" value="0"/>
-			<node_property name="end_time" value="7200"/>
-			<configuration>
-			  <conf_property name="cluster_id" value="0"/>
-			  <conf_property name="host_nb" value="1"/>
-			  <host_lists>
-			    <hosts start="22" nb="1"/>
-			  </host_lists>
-			</configuration>
-		</node_statistics>
-		<node_statistics>
-			<node_property name="id" value="22"/>
-			<node_property name="type" value="busy"/>
 			<node_property name="start_time" value="23007"/>
 			<node_property name="end_time" value="28800"/>
 			<configuration>
@@ -483,7 +483,7 @@
 		<node_statistics>
 			<node_property name="id" value="23"/>
 			<node_property name="type" value="busy"/>
-			<node_property name="start_time" value="7200"/>
+			<node_property name="start_time" value="0"/>
 			<node_property name="end_time" value="14400"/>
 			<configuration>
 			  <conf_property name="cluster_id" value="0"/>
@@ -561,19 +561,6 @@
 		<node_statistics>
 			<node_property name="id" value="25"/>
 			<node_property name="type" value="busy"/>
-			<node_property name="start_time" value="0"/>
-			<node_property name="end_time" value="7200"/>
-			<configuration>
-			  <conf_property name="cluster_id" value="0"/>
-			  <conf_property name="host_nb" value="1"/>
-			  <host_lists>
-			    <hosts start="25" nb="1"/>
-			  </host_lists>
-			</configuration>
-		</node_statistics>
-		<node_statistics>
-			<node_property name="id" value="25"/>
-			<node_property name="type" value="busy"/>
 			<node_property name="start_time" value="18000"/>
 			<node_property name="end_time" value="43200"/>
 			<configuration>
@@ -637,7 +624,7 @@
 			</configuration>
 		</node_statistics>
 		<node_statistics>
-			<node_property name="id" value="29"/>
+			<node_property name="id" value="31"/>
 			<node_property name="type" value="busy"/>
 			<node_property name="start_time" value="0"/>
 			<node_property name="end_time" value="7200"/>
@@ -645,7 +632,7 @@
 			  <conf_property name="cluster_id" value="0"/>
 			  <conf_property name="host_nb" value="1"/>
 			  <host_lists>
-			    <hosts start="29" nb="1"/>
+			    <hosts start="31" nb="1"/>
 			  </host_lists>
 			</configuration>
 		</node_statistics>

@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "Model.h"
+#include "UserException.h"
 #include <cstdlib>
 #include "direct.h"
 
@@ -11,59 +12,68 @@
 	vector<int> stageBorders;
 	bool canExecuteOnDiffResources;
 	int outputFileNumber;
+	bool directBellman;
 	
+void AddData(ofstream & r, int i){
+	try{
+		string resFileName = "staged_scheme_" + to_string((long long)i) + ".txt";
+		ifstream res(resFileName);
+		if (res.fail()) throw UserException("AddData(): unable to open res file");
+		string s;
+		while (!res.eof()){
+			getline(res,s);
+			r << s << endl;
+		}
+		res.close();
+		if (remove(resFileName.c_str())!=0)
+			throw UserException("AddData: unable to remove file");
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
 int _tmain(int argc, wchar_t** argv)
 {
 	
 	wstring fileResources, fileWorkflows, fileEx, fileSettings, fileXML;
 	if (argc == 1) {
-		/*T = 43200;
-		delta = 3600;
-		fileResources = L"res_t4_p0.25_r4_c4_2";
-		fileWorkflows = L"n-10_f-0.2_d-0.2_r-0.8_c-1_j-2.0";
-		fileEx = L"defaultExperRes.txt";*/
 		fileSettings=L"settings.txt";
 	}
 	else {
-		/*T = 43200;
-		delta = 1800;
-		fileResources = argv[1];
-		wcout << fileResources << endl;
-		fileWorkflows = argv[2];
-		wcout << fileWorkflows << endl;
-		fileEx = argv[3];
-		wcout << fileEx << endl;*/
 		fileSettings = argv[1];
 		wcout << fileSettings << endl;
 	}
 
 	try {
-	/*	fileXML = fileResources + fileWorkflows;
-		
-		
-		*/
-		
+	
 		double start = clock();
-		/* string sR(fileResources.begin(), fileResources.end()), 
-		sW(fileWorkflows.begin(), fileWorkflows.end()), sS(fileSettings.begin(),fileSettings.end()), 
-		sXML(fileXML.begin(), fileXML.end());*/
 		string s(fileSettings.begin(),fileSettings.end());
-		//ex << sW << endl;
 		outputFileNumber = 0;
 		Model m;
-		//m.Init(sR, sW, sS, sXML);
 		m.InitSettings(s);
 		_mkdir("result");
 		_chdir("result");
+		ofstream f("times.txt");
+		ofstream r("stagedScheme_res.txt");
+		double d = clock();
 		m.SetData();
-		//for (int i = 0; i < m.GetWorkflowNum(); i++)
-			m.StagedScheme(1);
-		/*
+		f << "Time of setting data " <<  (clock() - d) / CLOCKS_PER_SEC  << " sec "<< endl;
+		for (int i = 0; i < m.GetWorkflowNum(); i++){
+			double stageTime = clock();
+			m.StagedScheme(i);
+			f << "Time of attempt " << i+1 << "  " << (clock() - stageTime)/ CLOCKS_PER_SEC << " sec "<< endl;
+			AddData(r,i);
+		}
 		
-		ex.close();*/
-		cout << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
-		cout << endl;
 		
+		f << "Time of executing " <<  (clock() - start) / CLOCKS_PER_SEC  << " sec "<< endl;
+		f << endl;
+		f.close();
+		r.close();
+		ex.close();
 	}
 	catch(const string msg){
 		cout << msg << endl;
@@ -72,4 +82,6 @@ int _tmain(int argc, wchar_t** argv)
 	}
 	return 0;
 }
+
+
 

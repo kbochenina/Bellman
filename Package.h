@@ -30,6 +30,7 @@ public:
 	void PrintState (ofstream & f, const int &state);
 	int GetNextStateNum(unsigned int currentStateNum, int controlType, int controlCore);
 	void PrintExecTime(ofstream &f);
+	void GetExecTime(map <pair <int,int>, double> & out) {out = execTime;}
 	~Package(void);
 };
 

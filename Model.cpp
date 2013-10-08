@@ -5,6 +5,7 @@
 
 using namespace boost::filesystem;
 
+extern bool directBellman;
 
 bool SortPairs(pair <int, double> p1, pair <int,double> p2){
 	return (p1.second > p2.second);
@@ -597,20 +598,27 @@ void Model::SetData(){
 // firstWfNum from ZERO
 void Model::StagedScheme(int firstWfNum){
 	try{
-		cout << "Attempt: " << firstWfNum << endl;
+		double stagedT = clock();
 		string resFileName = "staged_scheme_" + to_string((long long)firstWfNum) + ".txt";
 		ofstream res(resFileName);
 		if (res.fail()) throw UserException("Unable to create res file");
+		res << "Attempt: " << firstWfNum << endl;
+		cout << "Attempt: " << firstWfNum << endl;
 		vector <int>usedWFNums;
 		string wrongFirstNum = "StagedScheme(): wrong firstWFNum";
 		vector<double> eff;
 	
 		if (firstWfNum < 0 || firstWfNum > Workflows.size()-1) throw UserException(wrongFirstNum);
-		
+		cout << "stage 1" << endl;
+		cout << "firstWfnum = " << firstWfNum << " ";
+		double s = clock();
 		ReadData(firstWfNum);
 		currentWfNum = firstWfNum;
+		directBellman = false;
 		BackBellmanProcedure();
+		directBellman = true;
 		eff.push_back(DirectBellman(firstWfNum));
+		cout << "elapsed time: " << (clock()-s)/1000.0 << " sec" << endl;
 		allStagesCores = stagesCores;
 		usedWFNums.push_back(firstWfNum);
 		BellmanToXML(true);
@@ -633,15 +641,20 @@ void Model::StagedScheme(int firstWfNum){
 		vector <vector <busyIntervals>> bestBusyIntervals;
 		vector <tuple<int,int,vector<int>>> bestStagesCores;
 		while (usedWFNums.size() != Workflows.size()){
+			cout << "stage " << usedWFNums.size() + 1 << endl;
 			double maxEff = 0.0;
 			int bestWfNum = -1;
 			for (vector<Workflow*>::size_type i = 0; i < Workflows.size(); i++){
 				if (find(usedWFNums.begin(), usedWFNums.end(), i)== usedWFNums.end()){
 					currentWfNum = i;
-					cout << "currentfNum = " << currentWfNum << endl;
+					double s = clock();
+					cout << "currentWfNum = " << currentWfNum << " ";
 					ReadData(i);
+					directBellman = false;
 					BackBellmanProcedure();
+					directBellman = true;
 					double currentEff = DirectBellman(i);
+					cout << "elapsed time: " << (clock()-s)/1000.0 << " sec" << endl;
 					if (maxEff < currentEff){
 						maxEff = currentEff;
 						bestWfNum = i;
@@ -679,19 +692,23 @@ void Model::StagedScheme(int firstWfNum){
 		SetFirstBusyIntervals();
 		stagesCores = allStagesCores;
 		BellmanToXML(false);
-		res.close();
-		cout << "Attempt " << firstWfNum << endl << "Workflow order: " ;
+		
+		res << "Attempt " << firstWfNum << endl << "Workflow order: " ;
 		for (vector<int>::size_type i = 0; i < usedNums.size(); i++){
-			cout << usedNums[i] << " ";
+			res << usedNums[i] << " ";
 		}
-		cout << endl << "Efficiencies: " ;
+		res << endl << "Efficiencies: " ;
 		double sum = 0.0;
 		for (vector<int>::size_type i = 0; i < eff.size(); i++){
 			sum+=eff[i];
-			cout << eff[i] << " ";
+			res << eff[i] << " ";
 		}
-		cout << "Max eff: " << sum << endl << endl;
+		res << endl << "Max eff: " << sum << endl << endl;
 		SetFirstBusyIntervals();
+		states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
+		res.close();
+		cout << "Max eff: " << sum << endl;
+		cout << "Elapsed time: " << (clock()-stagedT)/1000.0 << " sec" << endl;
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
@@ -700,6 +717,61 @@ void Model::StagedScheme(int firstWfNum){
 	}
 }
 
+void Model::Greedy(int wfNum){
+	vector<vector <int>> ready, exec, possible;
+
+	ready.resize(stages);
+	exec.resize(stages);
+	possible.resize(stages);
+
+	int packageCount = Workflows[wfNum]->GetPackageCount();
+
+	for (int i = 0; i < stages; i++){
+		// 1. Get possible packages numbers
+		if (i == 0){
+			for (int j = 0; j < packageCount; j++){
+				if (Workflows[wfNum]->IsPackageInit(j))
+					possible[i].push_back(j);
+			}
+		}
+		else {
+			for (int j = 0; j < packageCount; j++){
+				vector <vector <int>>::iterator it = ready.begin() + i-1;
+				if (find(it->begin(), it->end(),j) == it->end()){
+					it = exec.begin() + i;
+					if (find(it->begin(), it->end(),j) == it->end()){
+						vector<int> depend;
+						Workflows[wfNum]->GetDependency(j, depend);
+						bool isPossible = true;
+						vector <int>::iterator depIt = depend.begin();
+						it = ready.begin() + i-1;
+						for (; depIt!=depend.end(); depIt++){
+							if (find(it->begin(), it->end(),j) == it->end())
+								isPossible = false;
+						}
+						if (isPossible) 
+							possible[i].push_back(j);
+					}
+				}
+			}
+		}
+		// 2. Get tuples (packageNum, type, coresNum, efficiency)
+		vector <tuple<int, int, int, double>> variants;
+		vector <int>::iterator it = possible[i].begin();
+		for (; it!= possible[i].end(); it++){
+			// type + core + execTime
+			map <pair <int,int>, double> out;
+			Workflows[wfNum]->GetExecTime(out,*it);
+			map <pair <int,int>, double>::iterator outIt = out.begin();
+			for (; outIt!=out.end(); outIt++){
+				int tend = i*delta + outIt->second;
+				if (tend > T) tend = T;
+				double eff = EfficiencyByPeriod(outIt->first.second,i*delta,tend);
+				variants.push_back(make_tuple(*it, outIt->first.first, outIt->first.second, eff));
+			}
+		}
+	}
+}
 
 int Model::GetResourceType(int number){
 	try{
@@ -898,9 +970,9 @@ void Model::StagesCoresToXML(ofstream&f, int currentWfNum){
 		int currBeginIndex = 0;
 		
 		// correct
-		cout << "type=" << type << " cores = " << coresCount << " package = " << packageNum << " ";
+		//cout << "type=" << type << " cores = " << coresCount << " package = " << packageNum << " ";
 		double execTime = Workflows[currentWfNum]->GetExecTime(packageNum,type+1,coresCount);
-		cout << execTime << endl;
+		//cout << execTime << endl;
 		int tEnd = tBegin + execTime;
 		for (int j = 0; j < cores.size(); j++){
 			f << "\t\t<node_statistics>" << endl;

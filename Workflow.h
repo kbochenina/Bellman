@@ -48,4 +48,5 @@ class Workflow{
 	void PrintControl(const vector <int>& control, ofstream &f);
 	void PrintExecTime();
 	double GetExecTime(int pNum, int stateNum);
+	void GetExecTime(map <pair <int,int>, double> & out, int pNum);
 };

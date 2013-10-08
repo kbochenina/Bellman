@@ -7,6 +7,8 @@
 #include "UserException.h"
 using namespace std;
 
+
+
 typedef map <int,vector<pair<int,int>>>::iterator iInterval;
 
 bool avaliableTimesAsc(const std::pair <int, int> &p1, const std::pair <int, int> &p2)
@@ -284,8 +286,15 @@ void Resource::GetFreeTime(std::vector <std::vector<int>> & vec){
 				vec[i/delta][resourceIndex] = bBegin - i;
 				i+=delta;
 				while(i!=bEnd) {
-					if (i/delta > vec.size()-1) 
+					if (i/delta > vec.size()-1) {
+						vector <pair<int, int>>::iterator it = intervals.begin();
+						for (; it!= intervals.end(); it++){
+							cout << it->first << " " << it->second << endl;
+						}
+						cout << "bBegin = " << bBegin << endl;
+						cout << "bEnd = " << bEnd << endl;
 						throw UserException("Resource::GetFreeTime(): wrong i/delta");
+					}
 					vec[i/delta][resourceIndex] = 0;
 					i+=delta;
 				}

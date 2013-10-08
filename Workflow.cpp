@@ -443,6 +443,19 @@ bool Workflow::IsPackageInit(int pNum){
 	return flag;
 }
 
+void Workflow::GetExecTime(map <pair <int,int>, double> & out, int pNum){
+	try{
+		if (pNum < 0 || pNum > packages.size()-1)
+			throw UserException("Workflow::GetExecTime() : wrong pNum");
+		packages[pNum]->GetExecTime(out);
+	}
+	catch(const string msg){
+		cout << msg << endl;
+		system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
 /*
 parameters:
 state - vector of packages states
