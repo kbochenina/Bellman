@@ -68,14 +68,16 @@ class Model
 	void Model::SetOneTypeCoreNums(int typeIndex, vector<int> &addForbiddenCoreNums, vector<int>& out);
 	void GetBestBusyIntervals(vector<vector<busyIntervals>> & out);
 	void SetBestBusyIntervals(vector<vector<busyIntervals>> & in);
-	void Greedy(int wfNum);
+	//void Greedy(int wfNum);
+	void Model::CoresLocalToGlobal(int resType, vector <int> & cores);
 public:
 	Model(){}
 	void StagedScheme(int firstWFNum); //  firstWFNum from ZERO
 	void Init (string resFile, string wfFile, string settingsFile, string xmlFile);
 	void InitSettings(string);
 	void SetData();
-	double Greedy(int uopt, double currentEff);
+	//double Greedy(int uopt, double currentEff);
+	double Greedy(int wfNum);
 	int GetWorkflowNum(){return Workflows.size();}
 	~Model(void);
 };

@@ -7,6 +7,12 @@ using namespace boost::filesystem;
 
 extern bool directBellman;
 
+typedef tuple<int, int, int, double> mytuple;
+ 
+bool effDecr (const mytuple &lhs, const mytuple &rhs){
+  return get<3>(lhs) > get<3>(rhs);
+}
+
 bool SortPairs(pair <int, double> p1, pair <int,double> p2){
 	return (p1.second > p2.second);
 }
@@ -598,10 +604,12 @@ void Model::SetData(){
 // firstWfNum from ZERO
 void Model::StagedScheme(int firstWfNum){
 	try{
+		xmlBaseName = "DP_";
 		double stagedT = clock();
 		string resFileName = "staged_scheme_" + to_string((long long)firstWfNum) + ".txt";
 		ofstream res(resFileName);
-		if (res.fail()) throw UserException("Unable to create res file");
+		if (res.fail()) 
+			throw UserException("Unable to create res file");
 		res << "Attempt: " << firstWfNum << endl;
 		cout << "Attempt: " << firstWfNum << endl;
 		vector <int>usedWFNums;
@@ -717,7 +725,12 @@ void Model::StagedScheme(int firstWfNum){
 	}
 }
 
-void Model::Greedy(int wfNum){
+
+
+double Model::Greedy(int wfNum){
+	double eff = 0.0;
+	xmlBaseName = "Greedy_";
+	currentWfNum = wfNum;
 	vector<vector <int>> ready, exec, possible;
 
 	ready.resize(stages);
@@ -727,6 +740,7 @@ void Model::Greedy(int wfNum){
 	int packageCount = Workflows[wfNum]->GetPackageCount();
 
 	for (int i = 0; i < stages; i++){
+		cout << "\nstage " << i+1 << endl;
 		// 1. Get possible packages numbers
 		if (i == 0){
 			for (int j = 0; j < packageCount; j++){
@@ -736,17 +750,21 @@ void Model::Greedy(int wfNum){
 		}
 		else {
 			for (int j = 0; j < packageCount; j++){
-				vector <vector <int>>::iterator it = ready.begin() + i-1;
+				vector <vector <int>>::iterator it = ready.begin() + i;
+				// if package j is not ready
 				if (find(it->begin(), it->end(),j) == it->end()){
 					it = exec.begin() + i;
+					// and package j is not executed
 					if (find(it->begin(), it->end(),j) == it->end()){
 						vector<int> depend;
+						// depend will contain packages from which j depends
 						Workflows[wfNum]->GetDependency(j, depend);
 						bool isPossible = true;
 						vector <int>::iterator depIt = depend.begin();
-						it = ready.begin() + i-1;
+						it = ready.begin() + i;
+						// if one of those packages are not ready, j cannot begin execution
 						for (; depIt!=depend.end(); depIt++){
-							if (find(it->begin(), it->end(),j) == it->end())
+							if (find(it->begin(), it->end(),*depIt) == it->end())
 								isPossible = false;
 						}
 						if (isPossible) 
@@ -755,6 +773,10 @@ void Model::Greedy(int wfNum){
 				}
 			}
 		}
+		cout << "Possible: ";
+		for (vector <int>::iterator it = possible[i].begin(); it!= possible[i].end(); it++)
+			cout << *it << " ";
+
 		// 2. Get tuples (packageNum, type, coresNum, efficiency)
 		vector <tuple<int, int, int, double>> variants;
 		vector <int>::iterator it = possible[i].begin();
@@ -770,7 +792,51 @@ void Model::Greedy(int wfNum){
 				variants.push_back(make_tuple(*it, outIt->first.first, outIt->first.second, eff));
 			}
 		}
+		// 3. Sort variants by execTime decrease
+		sort(variants.begin(), variants.end(), effDecr);
+		// find a concretizations
+		vector <mytuple>::const_iterator t = variants.begin();
+		vector <int> packagesConcreted;
+		for (;t!= variants.end(); t++){
+			int packageIndex =  t->get<0>();
+			if (find(packagesConcreted.begin(), packagesConcreted.end(), packageIndex) == packagesConcreted.end()){
+				// execTime + coreNum
+				vector <vector<int>> oneTypeCoreNums;
+				vector<pair<double, unsigned int>> tC;
+				int typeIndex = t->get<1>()-1;
+				double execTime = Workflows[wfNum]->GetExecTime(packageIndex, t->get<1>(), t->get<2>());
+				tC.push_back(make_pair(execTime, t->get<2>()));
+				bool checkType = Resources[typeIndex]->Check(tC, i, oneTypeCoreNums, false);
+				// if we can not find a concretization, we'll proceed next variant
+				if (!checkType)
+					continue;
+				eff +=  t->get<3>();
+				packagesConcreted.push_back(packageIndex);
+				Resources[typeIndex]->AddDiaps(i,execTime, oneTypeCoreNums[0]);
+				// get global core numbers
+				CoresLocalToGlobal(typeIndex, oneTypeCoreNums[0]);
+				// add result to stagesCores
+				stagesCores.push_back(make_tuple(packageIndex,i, oneTypeCoreNums[0]));
+				// push package number to executed on required number stages
+				int last = i + execTime/delta + 1;
+				if ( (int)execTime % delta == 0) last++;
+				for (int j = i; j < last; j++)
+					exec[j].push_back(packageIndex);
+				// push package number to ready
+				for (int j = last; j < stages; j++)
+					ready[j].push_back(packageIndex);
+			}
+		}
+		cout << "\nReady: ";
+		for (vector <int>::iterator it = ready[i].begin(); it!= ready[i].end(); it++)
+			cout << *it << " ";
+		cout << endl << "Executed: ";
+		for (vector <int>::iterator it = exec[i].begin(); it!= exec[i].end(); it++)
+			cout << *it << " ";
+
 	}
+	BellmanToXML(true);
+	return eff;
 }
 
 int Model::GetResourceType(int number){
@@ -901,7 +967,7 @@ double Model::DirectBellman(int wfNum){
 }
 
 void Model::BellmanToXML(bool isOne){
-	string name = xmlBaseName + "DP_" + to_string((long long)outputFileNumber++) + ".jed";
+	string name = xmlBaseName + to_string((long long)outputFileNumber++) + ".jed";
 	ofstream f(name);
 	MetaXMLInfo(f);
 	f << "\t<node_infos>\n";
@@ -915,47 +981,56 @@ void Model::BellmanToXML(bool isOne){
 }
 
 void Model::StagesCoresToXML(ofstream&f){
-	int usedNumsIndex = 0;
-	currentWfNum = usedNums[usedNumsIndex];
-	int currentWfPackage = 0;
-	for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < allStagesCores.size(); i++){
-		int packageNum = allStagesCores[i].get<0>();
-		int tBegin = allStagesCores[i].get<1>() * delta;
-		int coresCount = allStagesCores[i].get<2>().size();
-		vector <int> cores = allStagesCores[i].get<2>();
-		int type = -1;
-		int currBeginIndex = 0;
-		for (int j = 0; j < Resources.size(); j++){
-			if (cores[0] >= currBeginIndex && cores[0] <= currBeginIndex + Resources[j]->GetCoresCount()){
-				type = j + 1;
-				break;
+	try{
+		int usedNumsIndex = 0;
+		if (usedNums.size()==0)
+			throw UserException("Model::StagesCoresToXML() : usedNums.size()==0");
+		currentWfNum = usedNums[usedNumsIndex];
+		int currentWfPackage = 0;
+		for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < allStagesCores.size(); i++){
+			int packageNum = allStagesCores[i].get<0>();
+			int tBegin = allStagesCores[i].get<1>() * delta;
+			int coresCount = allStagesCores[i].get<2>().size();
+			vector <int> cores = allStagesCores[i].get<2>();
+			int type = -1;
+			int currBeginIndex = 0;
+			for (int j = 0; j < Resources.size(); j++){
+				if (cores[0] >= currBeginIndex && cores[0] <= currBeginIndex + Resources[j]->GetCoresCount()){
+					type = j + 1;
+					break;
+				}
+				currBeginIndex += Resources[j]->GetCoresCount();
 			}
-			currBeginIndex += Resources[j]->GetCoresCount();
+			// correct
+			double execTime = Workflows[currentWfNum]->GetExecTime(packageNum,type,coresCount);
+			int tEnd = tBegin + execTime;
+			for (int j = 0; j < cores.size(); j++){
+				f << "\t\t<node_statistics>" << endl;
+				f << "\t\t	<node_property name=\"id\" value=\"" << packageNum+1 <<"\"/>" << endl;
+				f << "\t\t	<node_property name=\"type\" value=\"computation\"/>" << endl;
+				f << "\t\t	<node_property name=\"start_time\" value=\"" << tBegin << "\"/>" << endl;
+				f << "\t\t	<node_property name=\"end_time\" value=\"" << tEnd << "\"/>" << endl;
+				f << "\t\t	<configuration>" << endl;
+				f << "\t\t	  <conf_property name=\"cluster_id\" value=\"0\"/>" << endl;
+				f << "\t\t	  <conf_property name=\"host_nb\" value=\"1\"/>" << endl;
+				f << "\t\t	  <host_lists>" << endl;
+				f << "\t\t	    <hosts start=\"" << cores[j] << "\" nb=\"1\"/>" << endl;
+				f << "\t\t	  </host_lists>" << endl;
+				f << "\t\t	</configuration>" << endl;
+				f << "\t\t</node_statistics>" << endl;
+			}
+			currentWfPackage++;
+			if (currentWfPackage == Workflows[currentWfNum]->GetPackageCount()){
+				currentWfPackage = 0;
+				usedNumsIndex++;
+				currentWfNum = usedNums[usedNumsIndex];
+			}
 		}
-		// correct
-		double execTime = Workflows[currentWfNum]->GetExecTime(packageNum,type,coresCount);
-		int tEnd = tBegin + execTime;
-		for (int j = 0; j < cores.size(); j++){
-			f << "\t\t<node_statistics>" << endl;
-			f << "\t\t	<node_property name=\"id\" value=\"" << packageNum+1 <<"\"/>" << endl;
-			f << "\t\t	<node_property name=\"type\" value=\"computation\"/>" << endl;
-			f << "\t\t	<node_property name=\"start_time\" value=\"" << tBegin << "\"/>" << endl;
-			f << "\t\t	<node_property name=\"end_time\" value=\"" << tEnd << "\"/>" << endl;
-			f << "\t\t	<configuration>" << endl;
-			f << "\t\t	  <conf_property name=\"cluster_id\" value=\"0\"/>" << endl;
-			f << "\t\t	  <conf_property name=\"host_nb\" value=\"1\"/>" << endl;
-			f << "\t\t	  <host_lists>" << endl;
-			f << "\t\t	    <hosts start=\"" << cores[j] << "\" nb=\"1\"/>" << endl;
-			f << "\t\t	  </host_lists>" << endl;
-			f << "\t\t	</configuration>" << endl;
-			f << "\t\t</node_statistics>" << endl;
-		}
-		currentWfPackage++;
-		if (currentWfPackage == Workflows[currentWfNum]->GetPackageCount()){
-			currentWfPackage = 0;
-			usedNumsIndex++;
-			currentWfNum = usedNums[usedNumsIndex];
-		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -968,7 +1043,6 @@ void Model::StagesCoresToXML(ofstream&f, int currentWfNum){
 		vector <int> cores = stagesCores[i].get<2>();
 		int type = GetResourceType(cores[0]);
 		int currBeginIndex = 0;
-		
 		// correct
 		//cout << "type=" << type << " cores = " << coresCount << " package = " << packageNum << " ";
 		double execTime = Workflows[currentWfNum]->GetExecTime(packageNum,type+1,coresCount);
@@ -1203,6 +1277,25 @@ void Model::SetOneTypeCoreNums(int typeIndex, vector<int> &addForbiddenCoreNums,
 	}
 }
 
+void Model::CoresLocalToGlobal(int resType, vector <int> & cores){
+	try{
+		if (resType < 0 || resType > Resources.size() -1 )
+			throw UserException("Model::CoresLocalToGlobal() : wrong resType");
+		if (cores.size()==0)
+			throw UserException("Model::CoresLocalToGlobal() : cores.size() == 0");
+		int inc = 0;
+		for (int i = 0; i < resType; i++)
+			inc += Resources[i]->GetCoresCount();
+		vector<int>::iterator it = cores.begin();
+		for (;it!=cores.end(); it++)
+			*it += inc;
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
 
 
 /* parameters:
@@ -1274,6 +1367,7 @@ bool Model::FindConcretization (const unsigned int &state, const int &control, c
 					indexIt!=packagesIndexesPerType[typeIndex].end(); indexIt++){
 					auto coresIt = std::begin(oneTypeCoreNums[packageIndex]);
 					// find global core numbers
+					//CoresLocalToGlobal(typeIndex, oneTypeCoreNums[packageIndex]);
 					for (; coresIt!= std::end(oneTypeCoreNums[packageIndex]); coresIt++)
 						*coresIt += inc;
 					// concretizing the package

@@ -59,8 +59,11 @@ int _tmain(int argc, wchar_t** argv)
 		ofstream f("times.txt");
 		ofstream r("stagedScheme_res.txt");
 		double d = clock();
+		m.Greedy(0);
 		m.SetData();
+		
 		f << "Time of setting data " <<  (clock() - d) / CLOCKS_PER_SEC  << " sec "<< endl;
+		
 		for (int i = 0; i < m.GetWorkflowNum(); i++){
 			double stageTime = clock();
 			m.StagedScheme(i);

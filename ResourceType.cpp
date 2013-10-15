@@ -325,43 +325,6 @@ bool ResourceType::Check(const vector<pair<double,unsigned int>>& timeCores, con
 		if (numberAdopted!=coreNum) return false;
 	}
 	
-	if (directBellman == true && stage == 7 && isCheckedForState){
-		ofstream b("bugs.txt");
-		b << "Time cores: " << endl;
-		vector<pair<double,unsigned int>>::const_iterator it = timeCores.begin();
-		for (; it != timeCores.end(); it++){
-			b << "(" << it->first << " " << it->second << ")"; 
-		}
-		b << endl << "Left borders: " ;
-		for (int i = 0; i < GetCoresCount(); i++) 
-			b << leftBorders[i] << " ";
-		b << endl;
-		b << "Right borders: " ;
-		for (int i = 0; i < GetCoresCount(); i++) 
-			b << rightBorders[i] << " ";
-		b << endl;
-		vector <vector<int>>::iterator p = possiblePackagesCores.begin();
-		for (; p!=possiblePackagesCores.end(); p++){
-			vector <int>::iterator val = p->begin();
-			for (; val!=p->end(); val++)
-				b << *val << " " ;
-			b << endl;
-		}
-		b << "PackagesIndexesTimeDesc:";
-		vector <int>::iterator pt = packageIndexesTimeDesc.begin();
-		for (; pt != packageIndexesTimeDesc.end(); pt++)
-			b << *pt << " "; 
-		b << endl << "OneTypeCoreNums: " << endl;
-		p = oneTypeCoreNums.begin();
-		for (; p!=oneTypeCoreNums.end(); p++){
-			vector <int>::iterator val = p->begin();
-			for (; val!=p->end(); val++)
-				b << *val << " " ;
-			b << endl;
-		}
-		b.close();
-	}
-
 	return true;
 }
 
