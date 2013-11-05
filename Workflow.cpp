@@ -323,7 +323,7 @@ bool Workflow::Check (const int& state, const vector <int> & otherStates, const 
 }
 
 void Workflow::PrintPackagesStates(vector <vector<int>> &packagesStates){
-	string f = "wf"+to_string((long long)wfNum) + ".txt";
+	string f = "wf"+to_string((long long)wfNum) + "_states.txt";
 	ofstream file (f);
 	for (unsigned int i = 0; i < packagesStates.size(); i++){
 		for (unsigned int j = 0; j < packagesStates[i].size(); j++){
