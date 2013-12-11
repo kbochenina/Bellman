@@ -9,7 +9,7 @@ class Package
 	vector <int> resourceTypes; // numbers of nodes where package can be executed
 	vector <int> coreCounts; // numbers of cores where package can be executed 
 	map <pair <int,int>, double> execTime; // ((1,2),15) means that package executes 15 seconds on 2 cores of restype 1
-	vector <tuple<int,int,double>> packageStates; // (resType, cores, ready level)
+	vector <tuples::tuple<int,int,double>> packageStates; // (resType, cores, ready level)
 public:
 	Package(int u, vector <int> &r, vector <int> &c, map <pair <int,int>, double> &e);
 	vector <int>& GetResourcesTypes() {return resourceTypes;}

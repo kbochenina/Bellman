@@ -92,7 +92,7 @@ int Package::GetNextStateNum(unsigned int currentStateNum, int controlType, int 
 	try{
 		string errCurrentStateNum = "Package::GetNextStateNum() error, wrong current state num";
 		if (currentStateNum < 0 || currentStateNum > packageStates.size()-1) throw UserException(errCurrentStateNum);
-		tuple <int,int, double> currentState = packageStates[currentStateNum];
+		tuples::tuple <int,int, double> currentState = packageStates[currentStateNum];
 		int currentType = currentState.get<0>();
 		if (currentType==-1) return currentStateNum;
 		if (currentType!=0) {

@@ -443,7 +443,7 @@ bool Workflow::IsPackageInit(int pNum){
 	return flag;
 }
 
-void Workflow::GetExecTime(map <pair <int,int>, double> & out, int pNum){
+void Workflow::GetExecTime(map <pair <int,int>, double> & out, unsigned int pNum){
 	try{
 		if (pNum < 0 || pNum > packages.size()-1)
 			throw UserException("Workflow::GetExecTime() : wrong pNum");
@@ -462,6 +462,7 @@ state - vector of packages states
 timeCoresPerType - out parameter
 packagesIndexesPerType - out parameter, array of types size which contains indexes of packages (from 0) executing on some type
 */
+// WHY is level of package readiness ignored?
 void Workflow::SetTimesCoresForState(const vector<int>&state, vector<vector<pair<double, unsigned int>>>&timeCoresPerType,
 	vector<vector<int>>& packagesIndexesPerType){
 	try{
@@ -510,7 +511,7 @@ double Workflow::GetExecTime(int pNum, int state){
 	return packages[pNum]->GetExecTime(state);
 }
 
-double Workflow::GetExecTime(int pNum, int type, int cores) {
+double Workflow::GetExecTime(unsigned int pNum, int type, int cores) {
 	try{
 		if (pNum < 0 || pNum > packages.size()-1) throw UserException("Workflow::GetExecTime() : wrong packageNum " + to_string((long long)pNum));
 		return packages[pNum]->GetExecTime(type, cores);

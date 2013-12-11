@@ -23,8 +23,8 @@ class Model
 	// fields
 	vector <Workflow*> Workflows;
 	std::vector <ResourceType*> Resources;
-	vector <tuple<int,int,vector<int>>> stagesCores; // (package,stage, core1, core2,...) for package1, (stage, core1, core2, ...) for package 2...
-	vector <tuple<int,int,vector<int>>> allStagesCores; // 
+	vector <tuples::tuple<int,int,vector<int>>> stagesCores; // (package guid/uid,stage, core1, core2,...) for package1, (stage, core1, core2, ...) for package 2...
+	vector <tuples::tuple<int,int,vector<int>>> allStagesCores; // 
 	std::vector <int> forcedBricks;
 	double koeff;
 	vector <pair<unsigned short, unsigned short>> typesCores;

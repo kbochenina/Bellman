@@ -21,7 +21,7 @@ class Workflow{
 	Workflow (std::vector <Package*>, std::vector <std::vector <int>>, int, vector <ResourceType*>&, vector <pair<unsigned short, unsigned short>> &);
 	std::vector <Package*> GetPackages() {return packages;} // is useful??
 	int GetPackageCount(){return packages.size();}
-	double GetExecTime(int pNum, int type, int cores);
+	double GetExecTime(unsigned int pNum, int type, int cores);
 	std::vector<int> GetCoresCount(int pNum) {return packages[pNum]->GetCoresCount();}
 	// pNum begins from ZERO
 	bool IsPackageInit(int pNum);
@@ -48,5 +48,5 @@ class Workflow{
 	void PrintControl(const vector <int>& control, ofstream &f);
 	void PrintExecTime();
 	double GetExecTime(int pNum, int stateNum);
-	void GetExecTime(map <pair <int,int>, double> & out, int pNum);
+	void GetExecTime(map <pair <int,int>, double> & out, unsigned int pNum);
 };

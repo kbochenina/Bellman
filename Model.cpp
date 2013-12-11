@@ -7,7 +7,7 @@ using namespace boost::filesystem;
 
 extern bool directBellman;
 
-typedef tuple<int, int, int, double> mytuple;
+typedef tuples::tuple<int, int, int, double> mytuple;
  
 bool effDecr (const mytuple &lhs, const mytuple &rhs){
   return get<3>(lhs) > get<3>(rhs);
@@ -639,7 +639,7 @@ void Model::StagedScheme(int firstWfNum){
 		states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
 		
 		res << "WF " << firstWfNum << endl;
-		for (vector <tuple<int,int,vector<int>>>::iterator it = allStagesCores.begin(); it!= allStagesCores.end(); it++){
+		for (vector <tuples::tuple<int,int,vector<int>>>::iterator it = allStagesCores.begin(); it!= allStagesCores.end(); it++){
 			res << "(" << it->get<0>() << " " << it->get<1>() << " (";
 			for (vector<int>::iterator it2 = it->get<2>().begin(); it2 != it->get<2>().end(); it2++)
 				res << *it2 << " ";
@@ -647,7 +647,7 @@ void Model::StagedScheme(int firstWfNum){
 		}
 		res << endl;
 		vector <vector <busyIntervals>> bestBusyIntervals;
-		vector <tuple<int,int,vector<int>>> bestStagesCores;
+		vector <tuples::tuple<int,int,vector<int>>> bestStagesCores;
 		while (usedWFNums.size() != Workflows.size()){
 			cout << "stage " << usedWFNums.size() + 1 << endl;
 			double maxEff = 0.0;
@@ -681,7 +681,7 @@ void Model::StagedScheme(int firstWfNum){
 			currentWfNum = bestWfNum;
 			eff.push_back(maxEff);
 			res << "WF " << bestWfNum << endl;
-			for (vector <tuple<int,int,vector<int>>>::iterator it = bestStagesCores.begin(); it!= bestStagesCores.end(); it++){
+			for (vector <tuples::tuple<int,int,vector<int>>>::iterator it = bestStagesCores.begin(); it!= bestStagesCores.end(); it++){
 				res << "(" << it->get<0>() << " " << it->get<1>() << " (";
 				for (vector<int>::iterator it2 = it->get<2>().begin(); it2 != it->get<2>().end(); it2++)
 					res << *it2 << " ";
@@ -778,7 +778,7 @@ double Model::Greedy(int wfNum){
 			cout << *it << " ";
 
 		// 2. Get tuples (packageNum, type, coresNum, efficiency)
-		vector <tuple<int, int, int, double>> variants;
+		vector <tuples::tuple<int, int, int, double>> variants;
 		vector <int>::iterator it = possible[i].begin();
 		for (; it!= possible[i].end(); it++){
 			// type + core + execTime
@@ -789,7 +789,7 @@ double Model::Greedy(int wfNum){
 				int tend = i*delta + outIt->second;
 				if (tend > T) tend = T;
 				double eff = EfficiencyByPeriod(outIt->first.second,i*delta,tend);
-				variants.push_back(make_tuple(*it, outIt->first.first, outIt->first.second, eff));
+				variants.push_back(tuples::make_tuple(*it, outIt->first.first, outIt->first.second, eff));
 			}
 		}
 		// 3. Sort variants by execTime decrease
@@ -816,7 +816,7 @@ double Model::Greedy(int wfNum){
 				// get global core numbers
 				CoresLocalToGlobal(typeIndex, oneTypeCoreNums[0]);
 				// add result to stagesCores
-				stagesCores.push_back(make_tuple(packageIndex,i, oneTypeCoreNums[0]));
+				stagesCores.push_back(tuples::make_tuple(packageIndex,i, oneTypeCoreNums[0]));
 				// push package number to executed on required number stages
 				int last = i + execTime/delta + 1;
 				if ( (int)execTime % delta == 0) last++;
@@ -935,7 +935,7 @@ double Model::DirectBellman(int wfNum){
 						double execTime = Workflows[currentWfNum]->GetExecTime(pNum, states[bestStates[i]][pNum]);
 						int stageBegin = i+1 - execTime/delta;
 						if ((int)execTime%delta==0) stageBegin++;
-						stagesCores.push_back(make_tuple(pNum, stageBegin, *it));
+						stagesCores.push_back(tuples::make_tuple(pNum, stageBegin, *it));
 					}
 				}
 			}
@@ -949,7 +949,7 @@ double Model::DirectBellman(int wfNum){
 					int pNum = std::distance(packagesCoresNums.begin(), it);
 					if (find(proceededPNums.begin(), proceededPNums.end(),pNum)==proceededPNums.end()){
 						proceededPNums.push_back(pNum);
-						stagesCores.push_back(make_tuple(pNum, i, *it));
+						stagesCores.push_back(tuples::make_tuple(pNum, i, *it));
 					}
 				}
 			}
@@ -987,7 +987,7 @@ void Model::StagesCoresToXML(ofstream&f){
 			throw UserException("Model::StagesCoresToXML() : usedNums.size()==0");
 		currentWfNum = usedNums[usedNumsIndex];
 		int currentWfPackage = 0;
-		for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < allStagesCores.size(); i++){
+		for (vector <tuples::tuple<int,int,vector<int>>>::size_type i = 0; i < allStagesCores.size(); i++){
 			int packageNum = allStagesCores[i].get<0>();
 			int tBegin = allStagesCores[i].get<1>() * delta;
 			int coresCount = allStagesCores[i].get<2>().size();
@@ -1036,7 +1036,7 @@ void Model::StagesCoresToXML(ofstream&f){
 
 void Model::StagesCoresToXML(ofstream&f, int currentWfNum){
 	int currentWfPackage = 0;
-	for (vector <tuple<int,int,vector<int>>>::size_type i = 0; i < stagesCores.size(); i++){
+	for (vector <tuples::tuple<int,int,vector<int>>>::size_type i = 0; i < stagesCores.size(); i++){
 		int packageNum = stagesCores[i].get<0>();
 		int tBegin = stagesCores[i].get<1>() * delta;
 		int coresCount = stagesCores[i].get<2>().size();
