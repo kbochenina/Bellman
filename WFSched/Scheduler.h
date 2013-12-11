@@ -27,6 +27,8 @@ public:
 	// fulfill the variable methodsSet according to nonexistent algorithm
 	void SetSchedulingStrategy(int strategyNumber);
 	// get schedule according to scheduleVariant parameter
+	// 1 - classical staged scheme
+	// 2 - staged scheme with known order
 	void GetSchedule(int scheduleVariant);
 	~Scheduler(void);
 };

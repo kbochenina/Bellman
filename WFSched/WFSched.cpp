@@ -11,7 +11,7 @@
 
 using namespace std;
 
-enum SchedulingTypes { ONLY_BELLMAN, ONLY_GREEDY, MIXED };
+enum SchedulingTypes { ONLY_BELLMAN = 1, ONLY_GREEDY = 2, MIXED = 3 };
 
 int _tmain(int argc, wchar_t** argv)
 {
@@ -33,6 +33,8 @@ int _tmain(int argc, wchar_t** argv)
 	ModelData md(data);
 	Scheduler sched(md);
 	sched.SetSchedulingStrategy(ONLY_BELLMAN);	
+	sched.GetSchedule(1);
+	system("pause");
 	return 0;
 }
 
