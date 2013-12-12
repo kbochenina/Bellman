@@ -31,6 +31,8 @@ public:
 	void FixBusyIntervals();
 	void ResetBusyIntervals();
 	void SetInitBusyIntervals();
+	void GetIntervals(vector<BusyIntervals> &storedIntervals);
+	void SetIntervals(vector<BusyIntervals> &storedIntervals);
 	~ResourceType(void);
 };
 

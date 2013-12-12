@@ -27,6 +27,8 @@ class Scheduler
 	void StagedScheme(vector <int>& wfOrder);
 	// add to file info about schedule
 	void PrintOneWFSched(ofstream & out, Schedule & sched, int wfNum);
+	// add to res file additional schedule information
+	void PrintFooter(ofstream & out, vector<double>&eff);
 public:
 	Scheduler(ModelData& md);
 	// fulfill the variable methodsSet according to nonexistent algorithm

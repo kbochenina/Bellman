@@ -32,6 +32,8 @@ public:
 	inline void SetInit() { fixed = current = init; }
 	// add busy intervals [tBegin; (tBegin + execTime) round to highest stage border] to cores in coreNumbers
 	void AddDiaps(vector <int> coreNumbers, int tBegin, double execTime);
+	vector <BusyIntervals> GetCurrentIntervals() { return current; }
+	void SetCurrentIntervals(vector <BusyIntervals> & in) { current = in; } 
 	~Intervals(void);
 };
 

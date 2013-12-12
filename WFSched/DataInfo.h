@@ -43,7 +43,8 @@ public:
 	void FixBusyIntervals();
 	void ResetBusyIntervals();
 	void SetInitBusyIntervals();
-
+	void GetIntervals(vector<vector<BusyIntervals>> &storedIntervals);
+	void SetIntervals(vector<vector<BusyIntervals>> &storedIntervals);
 	~DataInfo(void);
 };
 

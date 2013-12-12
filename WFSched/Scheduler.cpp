@@ -46,7 +46,8 @@ void Scheduler::SetSchedulingStrategy(int strategyNumber)
 void Scheduler::StagedScheme(int firstWfNum){
 	cout << "StagedScheme(int) was called\n";
 	try{
-		if (firstWfNum < 0 || firstWfNum > data.GetWFCount()) 
+		int wfCount = data.GetWFCount();
+		if (firstWfNum < 0 || firstWfNum > wfCount) 
 			throw UserException("Scheduler::StagedScheme(int) error. Wrong init workflow number");
 		// creating XML with init time windows
 		xmlWriter->SetXMLBaseName("Init_");
@@ -70,15 +71,8 @@ void Scheduler::StagedScheme(int firstWfNum){
 		// getting schedule for first WF
 		double oneStepStart = clock();
 		eff.push_back(method->GetWFSchedule(oneWFsched));
-		cout << "Elapsed time: " << (clock()-oneStepStart)/1000.0 << " sec" << endl;
-		scheduledWFs.push_back(firstWfNum);	
-		// write result to XML
-		xmlWriter->CreateXML(oneWFsched);
-		// write result to res file
-		PrintOneWFSched(res, oneWFsched, firstWfNum);
-		data.FixBusyIntervals();
-		
-	/*	ReadData(firstWfNum);
+
+		/*	ReadData(firstWfNum);
 		int currentWfNum = firstWfNum;
 		directBellman = false;
 		BackBellmanProcedure();
@@ -92,79 +86,81 @@ void Scheduler::StagedScheme(int firstWfNum){
 		BellmanToXML(true);
 		//std::system("pause");
 		states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();*/
+
+		fullSchedule = oneWFsched;
 		
-	/*	
-		vector <vector <busyIntervals>> bestBusyIntervals;
-		vector <tuples::tuple<int,int,vector<int>>> bestStagesCores;
-		while (scheduledWFs.size() != Workflows.size()){
-			cout << "stage " << scheduledWFs.size() + 1 << endl;
-			double maxEff = 0.0;
+		cout << "Elapsed time: " << (clock()-oneStepStart)/1000.0 << " sec" << endl;
+		scheduledWFs.push_back(firstWfNum);	
+		// write result to XML
+		xmlWriter->CreateXML(oneWFsched);
+		// write result to res file
+		PrintOneWFSched(res, oneWFsched, firstWfNum);
+		data.FixBusyIntervals();
+		
+		// we need to store current busy intervals
+		// of schedule that give the best efficiency
+		// current best schedule is stored in oneWFsched
+		vector<vector <BusyIntervals>> storedIntervals;
+		Schedule storedSched;
+
+		while (scheduledWFs.size() != wfCount ){
+			cout << "Stage " << scheduledWFs.size() + 1 << endl;
+			double maxEff = -1.0;
 			int bestWfNum = -1;
-			for (vector<Workflow*>::size_type i = 0; i < Workflows.size(); i++){
-				if (find(scheduledWFs.begin(), scheduledWFs.end(), i)== scheduledWFs.end()){
-					currentWfNum = i;
-					double s = clock();
-					cout << "currentWfNum = " << currentWfNum << " ";
-					ReadData(i);
+			for (int i = 0; i < wfCount; i++){
+				// if this WF wasn't scheduled yet
+				if (find(scheduledWFs.begin(), scheduledWFs.end(), i) == scheduledWFs.end()){
+					cout << "CurrentWfNum = " << i << " ";
+					oneStepStart = clock();
+					method = SchedulingFactory::GetMethod(data, methodsSet[i], i);
+					oneWFsched.clear();
+					double currentEff = method->GetWFSchedule(oneWFsched);
+					method->printInfo();
+					cout << "Elapsed time: " << (clock()-oneStepStart)/1000.0 << " sec" << endl;
+					/*ReadData(i);
 					directBellman = false;
 					BackBellmanProcedure();
 					directBellman = true;
-					double currentEff = DirectBellman(i);
-					cout << "elapsed time: " << (clock()-s)/1000.0 << " sec" << endl;
+					double currentEff = DirectBellman(i);*/
 					if (maxEff < currentEff){
 						maxEff = currentEff;
 						bestWfNum = i;
-						bestStagesCores = stagesCores;
-						bestBusyIntervals.clear();
-						GetBestBusyIntervals(bestBusyIntervals);
+						storedSched = oneWFsched;
+						storedIntervals.clear();
+						data.GetIntervals(storedIntervals);
+						//GetBestBusyIntervals(bestBusyIntervals);
 					}
-					states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
+					data.ResetBusyIntervals(); // newfag in my program
+					//states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
 				}
 			}
-			int diapBegin = allStagesCores.size();
-			copy(bestStagesCores.begin(), bestStagesCores.end(),back_inserter(allStagesCores));
+			copy(storedSched.begin(), storedSched.end(), back_inserter(fullSchedule));
+			//copy(bestStagesCores.begin(), bestStagesCores.end(),back_inserter(allStagesCores));
 			scheduledWFs.push_back(bestWfNum);
-			usedNums = scheduledWFs;
-			stagesCores = bestStagesCores;
-			currentWfNum = bestWfNum;
+			//usedNums = scheduledWFs; ???
+			//stagesCores = bestStagesCores;
+			//currentWfNum = bestWfNum;
 			eff.push_back(maxEff);
-			res << "WF " << bestWfNum << endl;
-			for (vector <tuples::tuple<int,int,vector<int>>>::iterator it = bestStagesCores.begin(); it!= bestStagesCores.end(); it++){
-				res << "(" << it->get<0>() << " " << it->get<1>() << " (";
-				for (vector<int>::iterator it2 = it->get<2>().begin(); it2 != it->get<2>().end(); it2++)
-					res << *it2 << " ";
-				res << "))";
-			}
-			res << endl;
-			BellmanToXML(true);
-			//std::system("pause");
-			stagesCores.clear();
-			SetBestBusyIntervals(bestBusyIntervals);
+			// write result to XML
+			xmlWriter->CreateXML(fullSchedule);
+			// write result to res file
+			PrintOneWFSched(res, storedSched, bestWfNum);
+			data.SetIntervals(storedIntervals);  
+			data.FixBusyIntervals();
+			/*SetBestBusyIntervals(bestBusyIntervals);
 			FixNewBusyIntervals();
-			BellmanToXML(true);
+			BellmanToXML(true);*/
 			//std::system("pause");
 		}
-		usedNums = scheduledWFs;
+		/*usedNums = scheduledWFs; ???
 		SetFirstBusyIntervals();
 		stagesCores = allStagesCores;
-		BellmanToXML(false);
-		
-		res << "Attempt " << firstWfNum << endl << "Workflow order: " ;
-		for (vector<int>::size_type i = 0; i < usedNums.size(); i++){
-			res << usedNums[i] << " ";
-		}
-		res << endl << "Efficiencies: " ;
-		double sum = 0.0;
-		for (vector<int>::size_type i = 0; i < eff.size(); i++){
-			sum+=eff[i];
-			res << eff[i] << " ";
-		}
-		res << endl << "Max eff: " << sum << endl << endl;
-		SetFirstBusyIntervals();
-		states.clear(); controls.clear(); nextStateNumbers.clear(); stagesCores.clear();
+		BellmanToXML(false);*/
+		PrintFooter(res, eff);
+		data.SetInitBusyIntervals();
 		res.close();
-		cout << "Max eff: " << sum << endl;
-		cout << "Elapsed time: " << (clock()-stagedT)/1000.0 << " sec" << endl;*/
+		cout << "Max eff: " << maxEff << endl;
+		cout << "Elapsed time: " << (clock()-stagedT)/1000.0 << " sec" << endl;
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
@@ -206,4 +202,17 @@ void Scheduler::PrintOneWFSched(ofstream & res, Schedule & sched, int wfNum){
 		res << "))";
 	}
 	res << endl;
+}
+
+// add to res file additional schedule information
+void Scheduler::PrintFooter(ofstream & res, vector<double>&eff){
+	res << "Workflow order: " ;
+		for (vector<int>::size_type i = 0; i < scheduledWFs.size(); i++){
+			res << scheduledWFs[i] << " ";
+		}
+	res << endl << "Efficiencies: " ;
+	for (vector<int>::size_type i = 0; i < eff.size(); i++){
+		res << eff[i] << " ";
+	}
+	res << endl << "Max eff: " << maxEff << endl << endl;
 }

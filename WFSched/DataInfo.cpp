@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream> // istringstream
 #include <string>
+#include <iostream>
 #include <boost/filesystem.hpp> // directory_iterator, path
 #include <iterator>
 #include "UserException.h"
@@ -594,5 +595,19 @@ void DataInfo::ResetBusyIntervals(){
 void DataInfo::SetInitBusyIntervals(){
 	for (auto i = resources.begin(); i!= resources.end(); i++){
 		i->SetInitBusyIntervals();
+	}
+}
+
+void DataInfo::GetIntervals(vector<vector<BusyIntervals>> &out){
+	out.resize(resources.size());
+	for (vector<ResourceType>::size_type res = 0; res < resources.size(); res++){
+		resources[res].GetIntervals(out[res]);
+	}
+}
+
+void DataInfo::SetIntervals(vector<vector<BusyIntervals>> &out){
+	out.resize(resources.size());
+	for (vector<ResourceType>::size_type res = 0; res < resources.size(); res++){
+		resources[res].SetIntervals(out[res]);
 	}
 }
