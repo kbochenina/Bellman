@@ -52,7 +52,7 @@ void Scheduler::StagedScheme(int firstWfNum){
 		// creating XML with init time windows
 		xmlWriter->SetXMLBaseName("Init_");
 		Schedule oneWFsched;
-		xmlWriter->CreateXML(oneWFsched);
+		xmlWriter->CreateXML(oneWFsched, -1);
 		// ??!! think about it !
 		xmlWriter->SetXMLBaseName("DP_");
 		double stagedT = clock();
@@ -91,11 +91,12 @@ void Scheduler::StagedScheme(int firstWfNum){
 		
 		cout << "Elapsed time: " << (clock()-oneStepStart)/1000.0 << " sec" << endl;
 		scheduledWFs.push_back(firstWfNum);	
+		xmlWriter->CreateXML(oneWFsched, firstWfNum);
 		// write result to XML
-		xmlWriter->CreateXML(oneWFsched);
+		data.FixBusyIntervals();
 		// write result to res file
 		PrintOneWFSched(res, oneWFsched, firstWfNum);
-		data.FixBusyIntervals();
+		
 		
 		// we need to store current busy intervals
 		// of schedule that give the best efficiency
@@ -127,7 +128,7 @@ void Scheduler::StagedScheme(int firstWfNum){
 						bestWfNum = i;
 						storedSched = oneWFsched;
 						storedIntervals.clear();
-						data.GetIntervals(storedIntervals);
+						data.GetCurrentIntervals(storedIntervals);
 						//GetBestBusyIntervals(bestBusyIntervals);
 					}
 					data.ResetBusyIntervals(); // newfag in my program
@@ -141,12 +142,15 @@ void Scheduler::StagedScheme(int firstWfNum){
 			//stagesCores = bestStagesCores;
 			//currentWfNum = bestWfNum;
 			eff.push_back(maxEff);
+			// set current intervals as stored intervals
+			data.SetCurrentIntervals(storedIntervals);
 			// write result to XML
-			xmlWriter->CreateXML(fullSchedule);
+			xmlWriter->CreateXML(storedSched, bestWfNum);
 			// write result to res file
 			PrintOneWFSched(res, storedSched, bestWfNum);
-			data.SetIntervals(storedIntervals);  
+			  
 			data.FixBusyIntervals();
+			
 			/*SetBestBusyIntervals(bestBusyIntervals);
 			FixNewBusyIntervals();
 			BellmanToXML(true);*/

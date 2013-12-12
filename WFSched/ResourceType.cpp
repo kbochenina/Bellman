@@ -32,11 +32,11 @@ void ResourceType::SetInitBusyIntervals(){
 	windows.SetInit();
 }
 // get current intervals 
-void ResourceType::GetIntervals(vector<BusyIntervals> &storedIntervals){
+void ResourceType::GetCurrentIntervals(vector<BusyIntervals> &storedIntervals){
 	storedIntervals = windows.GetCurrentIntervals();
 }
 // set current intervals 
-void ResourceType::SetIntervals(vector<BusyIntervals> &storedIntervals){
+void ResourceType::SetCurrentIntervals(vector<BusyIntervals> &storedIntervals){
 	windows.SetCurrentIntervals(storedIntervals);
 }
 

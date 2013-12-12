@@ -9,7 +9,7 @@ class DataInfo
 {
 	// friend classes
 //	friend class Scheduler;
-//	friend class SchedulingMethod;
+	friend class ScheduleToXML;
 	// ATTRIBUTES
 	// modeling time characteristics
 	ModelingContext context;
@@ -38,13 +38,15 @@ public:
 	void CreateMetaWF();
 	// get WF count
 	inline int GetWFCount() {return workflows.size();}
+	inline int GetResourceCount() {return resources.size(); }
 	// get full cores count
 	inline int GetFullCoresCount() {return fullCoresCount;}
+	int GetResourceType (int coreNumber);
 	void FixBusyIntervals();
 	void ResetBusyIntervals();
 	void SetInitBusyIntervals();
-	void GetIntervals(vector<vector<BusyIntervals>> &storedIntervals);
-	void SetIntervals(vector<vector<BusyIntervals>> &storedIntervals);
+	void GetCurrentIntervals(vector<vector<BusyIntervals>> &storedIntervals);
+	void SetCurrentIntervals(vector<vector<BusyIntervals>> &storedIntervals);
 	~DataInfo(void);
 };
 

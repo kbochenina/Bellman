@@ -598,16 +598,35 @@ void DataInfo::SetInitBusyIntervals(){
 	}
 }
 
-void DataInfo::GetIntervals(vector<vector<BusyIntervals>> &out){
+void DataInfo::GetCurrentIntervals(vector<vector<BusyIntervals>> &out){
 	out.resize(resources.size());
 	for (vector<ResourceType>::size_type res = 0; res < resources.size(); res++){
-		resources[res].GetIntervals(out[res]);
+		resources[res].GetCurrentIntervals(out[res]);
 	}
 }
 
-void DataInfo::SetIntervals(vector<vector<BusyIntervals>> &out){
+void DataInfo::SetCurrentIntervals(vector<vector<BusyIntervals>> &out){
 	out.resize(resources.size());
 	for (vector<ResourceType>::size_type res = 0; res < resources.size(); res++){
-		resources[res].SetIntervals(out[res]);
+		resources[res].SetCurrentIntervals(out[res]);
+	}
+}
+
+int DataInfo::GetResourceType(int number){
+	try{
+		if (number < 0 || number > fullCoresCount-1) 
+			throw UserException("DataInfo::GetResourceType() error. Wrong coreNumber");
+		int current = 0;
+		for (vector <ResourceType>::iterator it = resources.begin(); it!= resources.end(); it++){
+			int currentCoreCount = it->GetCoresCount();
+			if (number >= current && number < current + currentCoreCount) 
+				return distance(resources.begin(), it);
+			current+=currentCoreCount;
+		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
 	}
 }

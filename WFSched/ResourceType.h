@@ -31,8 +31,9 @@ public:
 	void FixBusyIntervals();
 	void ResetBusyIntervals();
 	void SetInitBusyIntervals();
-	void GetIntervals(vector<BusyIntervals> &storedIntervals);
-	void SetIntervals(vector<BusyIntervals> &storedIntervals);
+	void GetCurrentIntervals(vector<BusyIntervals> &storedIntervals);
+	void SetCurrentIntervals(vector<BusyIntervals> &storedIntervals);
+	void GetCurrentWindows(Intervals & out) { out = windows; }
 	~ResourceType(void);
 };
 
