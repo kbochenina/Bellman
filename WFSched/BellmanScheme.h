@@ -23,8 +23,9 @@ class BellmanScheme : public SchedulingMethod
 	static vector <int> settedWFs;
 	// vector of packages states
 	vector <PackageStates> pStates;
+// !!!??? see which methods are ACTUALLY public
 public:
-	BellmanScheme(DataInfo &d, int u, int w) : SchedulingMethod(d,u,w){};
+	BellmanScheme(DataInfo &d,int u, int w) : SchedulingMethod(d,u,w){};
 	// common function for setting data
 	void SetData();
 	// setting packages states
@@ -45,6 +46,8 @@ public:
 	// don't know about this?
 	bool Check(int state, vector <int> otherStates, int pNum);
 	void DirectBellman();
+	double GetWFSchedule(Schedule &out);
+	void printInfo();
 	~BellmanScheme(void);
 };
 

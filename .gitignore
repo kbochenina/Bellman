@@ -16,6 +16,8 @@
 *.sdf
 *.txt
 *.suo
+*.vsp
+*.psess
 
 #Unused directories
 /Debug

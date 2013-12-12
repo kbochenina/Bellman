@@ -569,11 +569,30 @@ void DataInfo::InitResources(string f, bool canExecuteOnDiffResources){
 			allCoresCount += Resources[i]->GetCoresCount();
 		}
 		koeff = 2.00 / allCoresCount;
-		file.close();*/
+		;*/
+		file.close();
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
 		std::system("pause");
 		exit(EXIT_FAILURE);
+	}
+}
+
+void DataInfo::FixBusyIntervals(){
+	for (auto i = resources.begin(); i!= resources.end(); i++){
+		i->FixBusyIntervals();
+	}
+}
+
+void DataInfo::ResetBusyIntervals(){
+	for (auto i = resources.begin(); i!= resources.end(); i++){
+		i->ResetBusyIntervals();
+	}
+}
+
+void DataInfo::SetInitBusyIntervals(){
+	for (auto i = resources.begin(); i!= resources.end(); i++){
+		i->SetInitBusyIntervals();
 	}
 }

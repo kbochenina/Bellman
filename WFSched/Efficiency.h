@@ -5,6 +5,7 @@ class Efficiency
 public:
 	Efficiency(){}
 	Efficiency(double k): koeff(k){}
+	inline double GetKoeff() {return koeff; }
 	// return value of efficiency function in a point
 	double EfficiencyFunction(double x);
 	// return value of efficiency by period

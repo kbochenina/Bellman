@@ -16,3 +16,20 @@ ResourceType::ResourceType(int u, int nC, int rC, double p, vector<BusyIntervals
 ResourceType::~ResourceType(void)
 {
 }
+
+// fix busy intervals after scheduling
+void ResourceType::FixBusyIntervals(){
+	windows.Fix();
+}
+
+// set current busy intervals to fixed
+void ResourceType::ResetBusyIntervals(){
+	windows.Reset();
+}
+
+// set current and fixed busy intervals to init
+void ResourceType::SetInitBusyIntervals(){
+	windows.SetInit();
+}
+
+

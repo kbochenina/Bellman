@@ -1,5 +1,6 @@
 #include "ScheduleToXML.h"
 #include "Efficiency.h"
+#include <memory>
 #pragma once
 
 // provides finding schedule for one WF
@@ -13,13 +14,17 @@ protected:
 	// current wfNum
 	int wfNum;
 	// efficiency finder
-	Efficiency eff;
+	unique_ptr<Efficiency> eff;
 public:
-	SchedulingMethod(DataInfo &d, int u, int w) : data(d), uid(u), wfNum(w) {}
+	SchedulingMethod(DataInfo &d, int u, int w) : data(d), uid(u), wfNum(w) {
+		eff = unique_ptr<Efficiency> ( new Efficiency(2.00 / data.GetFullCoresCount()) );
+	}
 	// get schedule for current method and WF
 	// return value is efficiency
 	// resulting schedule is stored in out parameter
-	double GetWFSchedule(Schedule &out);
+	virtual double GetWFSchedule(Schedule &out) = 0;
+	// print info
+	virtual void printInfo() = 0;
 	~SchedulingMethod(void);
 };
 

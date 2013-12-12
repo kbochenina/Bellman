@@ -7,6 +7,9 @@ using namespace std;
 #pragma once
 class DataInfo
 {
+	// friend classes
+//	friend class Scheduler;
+//	friend class SchedulingMethod;
 	// ATTRIBUTES
 	// modeling time characteristics
 	ModelingContext context;
@@ -27,6 +30,7 @@ class DataInfo
 	void InitResources(string fName, bool canExecuteOnDiffResources);
 	// init workflows
 	void InitWorkflows(string fName);
+	
 public:
 	DataInfo(){}
 	DataInfo(string fSettings);
@@ -34,6 +38,12 @@ public:
 	void CreateMetaWF();
 	// get WF count
 	inline int GetWFCount() {return workflows.size();}
+	// get full cores count
+	inline int GetFullCoresCount() {return fullCoresCount;}
+	void FixBusyIntervals();
+	void ResetBusyIntervals();
+	void SetInitBusyIntervals();
+
 	~DataInfo(void);
 };
 

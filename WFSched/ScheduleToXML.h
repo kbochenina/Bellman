@@ -17,6 +17,7 @@ public:
 	// create an XML file based on current data state (especially fixed intervals)
 	// add packages from currentSchedule
 	void CreateXML(Schedule currentSchedule);
+	void SetXMLBaseName(string name) { xmlBaseName = name; }
 	~ScheduleToXML(void);
 };
 

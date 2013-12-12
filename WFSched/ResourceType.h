@@ -28,6 +28,9 @@ public:
 	bool Check(const vector<TimeCore>& timeCores, int tBegin, bool checkType, vector<vector<int>>&out);
 	inline int GetCoresCount() {return numCoresPerOneRes * resCount; }
 	inline double GetPerf() {return perf;}
+	void FixBusyIntervals();
+	void ResetBusyIntervals();
+	void SetInitBusyIntervals();
 	~ResourceType(void);
 };
 
