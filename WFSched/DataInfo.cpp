@@ -630,3 +630,19 @@ int DataInfo::GetResourceType(int number){
 		exit(EXIT_FAILURE);
 	}
 }
+
+// get initial core index of resource type
+int DataInfo::GetInitResourceTypeIndex(int type){
+	int index = 0;
+	for (int i = 0; i < type; i++)
+		index += resources[i].GetCoresCount();
+	return index;
+}
+
+// do the same
+int DataInfo::GetTypeCoreIndex(const pair<int,int>& typeCore){
+	auto it = find(typesCores.begin(), typesCores.end(), typeCore);
+	if (it == typesCores.end())
+		return -2;
+	else return distance(typesCores.begin(), it);
+}

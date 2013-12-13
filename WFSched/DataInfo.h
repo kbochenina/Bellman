@@ -1,6 +1,7 @@
 #include "Workflow.h"
 #include "ResourceType.h"
 #include "ModelingContext.h"
+#include "memory.h"
 
 using namespace std;
 
@@ -47,6 +48,18 @@ public:
 	void SetInitBusyIntervals();
 	void GetCurrentIntervals(vector<vector<BusyIntervals>> &storedIntervals);
 	void SetCurrentIntervals(vector<vector<BusyIntervals>> &storedIntervals);
+	// getter 
+	const vector<Workflow> & Workflows() const { return workflows; }
+	const vector<ResourceType> & Resources() const { return resources; }
+	const Workflow& Workflows(int wfNum) const {return workflows[wfNum]; }
+	const ResourceType& Resources(int resNum) const {return resources[resNum]; }
+	const vector<pair<int,int>> & TypesCores() const { return typesCores; }
+	const pair<int,int>& TypesCores(int index) const {return typesCores[index]; }
+	int GetDelta() {return context.GetDelta();}
+	// get initial core index of resource type
+	int GetInitResourceTypeIndex(int type);
+	// do the same
+	int GetTypeCoreIndex(const pair<int,int>& typeCore);
 	~DataInfo(void);
 };
 

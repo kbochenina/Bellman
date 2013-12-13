@@ -51,10 +51,9 @@ void ScheduleToXML::BusyToXML(ofstream &f){
 		// for each resource
 		for (int j = 0; j < fixed.size(); j++){
 			// get pointer to resource's intervals
-			unique_ptr<BusyIntervals> bI = unique_ptr<BusyIntervals>(&fixed[j]);
-			BusyIntervals::iterator bIt = bI->begin();
+			BusyIntervals::iterator bIt = fixed[j].begin();
 			// loop on different cores
-			for (;bIt != bI->end(); bIt++){
+			for (;bIt != fixed[j].end(); bIt++){
 				int coreNum = bIt->first-1;
 				coreNum += inc;
 				// loop on different intervals
@@ -76,7 +75,7 @@ void ScheduleToXML::BusyToXML(ofstream &f){
 					f << "\t\t</node_statistics>" << endl;
 				}
 			}
-			inc += bI->size();
+			inc += fixed[j].size();
 			
 		}
 	}

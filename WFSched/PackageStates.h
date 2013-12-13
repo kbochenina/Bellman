@@ -13,11 +13,14 @@ class PackageStates
 	int pNum;
 	vector <PackageState> fullStates;
 public:
-	PackageStates(int p, vector <PackageState> fS);
-	int GetType(int stateNum) {return fullStates[stateNum].get<0>();}
-	int GetCore(int stateNum) {return fullStates[stateNum].get<1>();}
-	double GetLevel(int stateNum) {return fullStates[stateNum].get<2>();}
-	int GetNextStateNum(int currentState, int controlType, int controlCore);
+	PackageStates(int p, vector <PackageState> fS) : pNum(p), fullStates(fS) { };
+	PackageStates(PackageStates&& rhs);
+	const int& GetType(int stateNum) {return fullStates[stateNum].get<0>();}
+	const int& GetCore(int stateNum) {return fullStates[stateNum].get<1>();}
+	const double& GetLevel(int stateNum) {return fullStates[stateNum].get<2>();}
+	const int GetStatesCount() const {return fullStates.size();}
+	const PackageState& operator[] (int index) const { return fullStates[index]; }
+	int GetNextStateNum(int currentState, pair<int,int> typeCore);
 	~PackageStates(void);
 };
 

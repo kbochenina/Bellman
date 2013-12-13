@@ -1,0 +1,17 @@
+ <cmap name="default">
+    
+	<conf name="min_font_size_label" value="10" />
+	<conf name="font_size_label" value="18" />
+	<conf name="font_size_axes" value="18" /> 
+
+	<task id="computation">
+		<color type="fg" rgb="FFFFFF" />
+		<color type="bg" rgb="0000FF" /> 
+	</task>
+
+	<task id="busy">
+		<color type="fg" rgb="000000" />
+		<color type="bg" rgb="f10000" /> 
+	</task>
+
+</cmap>

@@ -23,17 +23,21 @@ class BellmanScheme : public SchedulingMethod
 	static vector <int> settedWFs;
 	// vector of packages states
 	vector <PackageStates> pStates;
-// !!!??? see which methods are ACTUALLY public
-public:
-	BellmanScheme(DataInfo &d,int u, int w) : SchedulingMethod(d,u,w){};
+	// private methods
 	// common function for setting data
 	void SetData();
 	// setting packages states
 	void SetPackagesStates();
-	// recursive function for initializing states, nextStates and controls
-	void SetFullData (int pNum);
-	// recursive procedure for getting controls
-	void GetControls();
+	// recursive function for initializing states
+	void SetStates (int pNum);
+	// procedure for setting controls
+	void SetControls();
+	// recursive function for getting controls for one state
+	void GetControls(const vector<int>& state, int pNum);
+	// check the state for consistency
+	// (otherStates is already checked)
+	bool CheckState(const int& state, const vector <int>& otherStates, int pNum);
+	void CheckForReadiness(vector<int>& nextStates);
 	// reading full data from file
 	void ReadData();
 	void BackBellmanProcedure();
@@ -43,11 +47,11 @@ public:
 		AllTimeCore timeCores, vector <vector<int>> packagesCoresNums);
 	// additional eff function for using in GetStageInformation() function
 	double GetEfficiency(int state, int control, int stage);
-	// don't know about this?
-	bool Check(int state, vector <int> otherStates, int pNum);
 	void DirectBellman();
-	double GetWFSchedule(Schedule &out);
 	void printInfo();
+public:
+	BellmanScheme(DataInfo &d,int u, int w);
+	double GetWFSchedule(Schedule &out);
 	~BellmanScheme(void);
 };
 
