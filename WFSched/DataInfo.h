@@ -31,7 +31,8 @@ class DataInfo
 	void InitResources(string fName, bool canExecuteOnDiffResources);
 	// init workflows
 	void InitWorkflows(string fName);
-	
+	// print typesCores to file
+	void PrintTypesCores();
 public:
 	DataInfo(){}
 	DataInfo(string fSettings);
@@ -51,10 +52,10 @@ public:
 	// getter 
 	const vector<Workflow> & Workflows() const { return workflows; }
 	const vector<ResourceType> & Resources() const { return resources; }
-	const Workflow& Workflows(int wfNum) const {return workflows[wfNum]; }
-	const ResourceType& Resources(int resNum) const {return resources[resNum]; }
-	const vector<pair<int,int>> & TypesCores() const { return typesCores; }
-	const pair<int,int>& TypesCores(int index) const {return typesCores[index]; }
+	const Workflow& Workflows(int wfNum) const ;
+	const ResourceType& Resources(int resNum) const ;
+	const vector<pair<int,int>> & TypesCores() const {return typesCores;}
+	const pair<int,int>& TypesCores(int index) const ;
 	int GetDelta() {return context.GetDelta();}
 	// get initial core index of resource type
 	int GetInitResourceTypeIndex(int type);

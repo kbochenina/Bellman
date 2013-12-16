@@ -6,6 +6,7 @@
 #include <iostream>
 #include <boost/filesystem.hpp> // directory_iterator, path
 #include <iterator>
+#include "direct.h"
 #include "UserException.h"
 
 using namespace boost::filesystem; // directory_iterator, path
@@ -17,6 +18,18 @@ DataInfo::~DataInfo(void)
 DataInfo::DataInfo( string fSettings )
 {
 	Init(fSettings);
+	PrintTypesCores();
+}
+
+// also IMPORTANT: mkdir
+void DataInfo::PrintTypesCores(){
+	_mkdir("Output");
+	_chdir("Output");
+	ofstream f("typesCores.txt");
+	for (unsigned i = 0; i < typesCores.size(); i++){
+		f << "# " << i << "\ttype # " << typesCores[i].first << "\tcores " << typesCores[i].second << endl;
+	}
+	f.close();
 }
 
 void DataInfo::Init(string settingsFile){
@@ -171,6 +184,7 @@ void DataInfo::Init(string settingsFile){
 	}
 }
 
+// NOTE: types will be recorded from 1!
 void DataInfo::InitWorkflows(string f){
 	try{
 		char second[21]; // enough to hold all numbers up to 64-bits
@@ -549,6 +563,7 @@ void DataInfo::InitResources(string f, bool canExecuteOnDiffResources){
 			}
 			ResourceType r(i+1,resourcesCount, coresCount, perf, typeBI, canExecuteOnDiffResources, context);
 			resources.push_back(r);
+			// resources are numbered from 1 in typesCores
 			for (int j = 1; j <= coresCount; j++)
 				typesCores.push_back(make_pair(i+1, j));
 			fullCoresCount += coresCount * resourcesCount;
@@ -623,6 +638,7 @@ int DataInfo::GetResourceType(int number){
 				return distance(resources.begin(), it);
 			current+=currentCoreCount;
 		}
+		return -1;
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
@@ -641,8 +657,56 @@ int DataInfo::GetInitResourceTypeIndex(int type){
 
 // do the same
 int DataInfo::GetTypeCoreIndex(const pair<int,int>& typeCore){
-	auto it = find(typesCores.begin(), typesCores.end(), typeCore);
-	if (it == typesCores.end())
-		return -2;
-	else return distance(typesCores.begin(), it);
+	try{
+		auto it = find(typesCores.begin(), typesCores.end(), typeCore);
+		if (it == typesCores.end())
+			throw UserException("DataInfo::GetTypeCoreIndex() error. Can not find typeCore");
+		return distance(typesCores.begin(), it);
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+// PRE: wfNum >=0 && wfNum < workflows.size()
+const Workflow& DataInfo::Workflows(int wfNum) const {
+	try{
+		if ( wfNum < 0 || static_cast<unsigned>(wfNum) >= workflows.size() )
+			throw UserException("DataInfo::Workflows() error. Index out of range");
+		return workflows[wfNum]; 
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+// PRE: resNum >=0 && resNum < resources.size()
+const ResourceType& DataInfo::Resources(int resNum) const {
+	try {
+		if ( resNum < 0 || static_cast<unsigned>(resNum) >= resources.size() )
+			throw UserException("DataInfo::Resources() error. Index out of range");
+		return resources[resNum]; 
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+// PRE: index >=0 && index < typesCores.size()
+const pair<int,int>& DataInfo::TypesCores(int index) const {
+	try{
+		if ( index < 0 || static_cast<unsigned>(index) >= typesCores.size() )
+			throw UserException("DataInfo::TypesCores() error. Index out of range");
+		return typesCores[index]; 
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }

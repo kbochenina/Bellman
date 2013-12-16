@@ -3,6 +3,8 @@
 #include "UserException.h"
 #include <ctime>
 #include <iostream>
+#include <fstream> // ReadData()
+#include <sstream> // ReadData()
 
 vector <int> BellmanScheme::settedWFs;
 
@@ -18,8 +20,11 @@ BellmanScheme::BellmanScheme(DataInfo &d,int u, int w) : SchedulingMethod(d,u,w)
 			break;
 		}
 	}
-	if (wasSetted)
+	if (wasSetted){
+		int t = clock();
 		ReadData();
+		cout << "Time of reading data = " << (clock() - t)/1000.0 << endl;
+	}
 	else SetData();
 }
 
@@ -41,8 +46,9 @@ void BellmanScheme::SetData(){
 	cout << "Time of setting states = " << (clock() - t)/1000.0 << endl;
 	t = clock();
 	SetControls();
-	cout << "Time of setting controls = " << (clock() - t)/1000.0 << endl;
+	cout << "Time of setting controls and next states = " << (clock() - t)/1000.0 << endl;
 	t = clock();
+	PrintData();
 	//Workflows[i]->SetFullPackagesStates(0, states, controls, nextStateNumbers);
 	//for (int j = 0; j < stages; j++) 
 	//	FullInfo[j].resize(states.size());
@@ -56,8 +62,184 @@ void BellmanScheme::SetData(){
 	settedWFs.push_back(wfNum);
 }
 
-void BellmanScheme::ReadData(){
+void BellmanScheme::PrintData(){
+	string fileName = "wf" + to_string(wfNum) + "_controls.txt";
+	ofstream f(fileName);
+	for (unsigned int i = 0; i < controls.size(); i++){
+		f << "State " << i+1 << endl;
+		for (unsigned int j = 0; j < states[i].size(); j++){
+			f << states[i][j];
+			f << " ";
+		}
+		// print state
+		/*for (unsigned int j = 0; j < packagesStates[i].size(); j++){
+			packages[j]->PrintState(f, packagesStates[i][j]);
+			f << " ";
+		}*/
+		f << endl;
+		
+		for (unsigned int j = 0; j < controls[i].size(); j++){
+			for (unsigned int k = 0; k < controls[i][j].size(); k++){
+				f << controls[i][j][k] << " ";
+			}
 
+			/*for (unsigned int k = 0; k < controls[i][j].size(); k++){
+				int control = controls[i][j][k];
+				if (control == -1) f << "(0 0)";
+				else f << "(" << _reftypesCores[control].first << " " << _reftypesCores[control].second << ")";
+			}*/
+			f << endl;
+			f << nextStates[i][j] << " ";
+			/*for (unsigned int k = 0; k < packagesStates[nextStateNumbers[i][j]].size(); k++){
+				
+				packages[k]->PrintState(f, packagesStates[nextStateNumbers[i][j]][k]);
+				f << " ";
+			}*/
+			f << endl;
+		}
+
+	}
+	PrintStates();
+	f.close();
+}
+
+// print states info to file 
+void BellmanScheme::PrintStates(){
+	string fileName = "wf" + to_string(wfNum) + "_states.txt";
+	ofstream f(fileName);
+	for (auto package: pStates)
+		package.PrintStates(f);
+	f.close();
+}
+
+void BellmanScheme::ReadData(){
+	try{
+		if (wfNum < 0) 
+			throw UserException("BellmanScheme::ReadData() error. Negative wfNum");
+		int packages = data.Workflows(wfNum).GetPackageCount();
+		string name = "wf" + to_string(wfNum) + "_controls.txt";
+		ifstream f(name);
+		if (f.fail()) 
+			throw UserException("BellmanScheme::ReadData() error. File " + name + "cannot be open");
+		int line = 0;
+		string errEarlyEnd = "BellmanScheme::ReadData() error. Early file end";
+		string s;
+		getline(f,s);
+		line++;
+		if (f.eof()) 
+			throw UserException(errEarlyEnd);
+		if (s.find("State")==string::npos) 
+			throw UserException("BellmanScheme::ReadData() error. Wrong format at line " + to_string(line));
+		while (!f.eof()){
+			// read state
+			getline(f,s);
+			line++;
+			if (f.eof()) 
+				throw UserException(errEarlyEnd);
+			istringstream iss(s);
+			vector <int> state;
+			for (int i = 0; i < packages; i++){
+				iss >> s;
+				state.push_back(stoi(s));
+			}
+			states.push_back(move(state));
+			getline(f,s);
+			line++;
+			if (f.eof()) 
+				throw UserException(errEarlyEnd);
+			// reading controls and next states
+			vector <vector<int>> oneStateControls;
+			vector<int> nextStates;
+			do 
+			{
+				iss.str(s);
+				iss.clear();
+				vector <int> control;
+				for (int i = 0; i < packages; i++){
+					iss >> s;
+					control.push_back(stoi(s));
+				}
+				oneStateControls.push_back(move(control));
+
+				getline(f,s);
+				line++;
+				if (f.eof()) throw UserException(errEarlyEnd);
+				nextStates.push_back(stoi(s));
+
+				getline(f,s);
+				line++;
+
+			} while (s.find("State")==string::npos && !f.eof());
+			controls.push_back(move(oneStateControls));
+			this->nextStates.push_back(move(nextStates));
+		}
+		ReadStates();
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+	catch (std::exception& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void BellmanScheme::ReadStates(){
+	try{
+		if (wfNum < 0) 
+			throw UserException("BellmanScheme::ReadStates() error. Negative wfNum");
+		int packages = data.Workflows(wfNum).GetPackageCount();
+		string name = "wf" + to_string(wfNum) + "_states.txt";
+		ifstream f(name);
+		if (f.fail()) 
+			throw UserException("BellmanScheme::ReadStates() error. File " + name + "cannot be open");
+		int line = 0;
+		string errEarlyEnd = "BellmanScheme::ReadStates() error. Early file end";
+		string s;
+		for (int i = 0; i < packages; i++){
+			// Package #
+			getline(f,s);
+			line++;
+			if (f.eof()) 
+				throw UserException(errEarlyEnd);
+			if (s.find("Package")==string::npos) 
+				throw UserException("BellmanScheme::ReadStates() error. Wrong format at line " + to_string(line));
+			getline(f,s);
+			line++;
+			if (f.eof()) 
+				throw UserException(errEarlyEnd);
+			int stateNum = 0;
+			int type, core;
+			double level;
+			vector <PackageState> packageStates;
+			string search = "State # ";
+			istringstream iss(s);
+			// State #
+			while (s.find(search) != string::npos){
+				s.erase(0, search.length());
+				iss.str(s);
+				iss >> stateNum;
+				iss >> type >> core >> level;
+				packageStates.push_back(make_tuple(type, core, level));
+				getline(f,s);
+			}
+			PackageStates newP(i,packageStates);
+			pStates.push_back(move(newP));
+		}
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
+	catch (std::exception& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
+	}
 }
 
 // setting packages states
@@ -82,7 +264,7 @@ void BellmanScheme::SetPackagesStates(){
 
 		packageStates.push_back(make_tuple(0, 0, 1));
 		PackageStates obj(uid, packageStates);
-		pStates.push_back(obj);
+		pStates.push_back(move(obj));
 	}
 	catch (UserException& e){
 		cout<<"error : " << e.what() <<endl;
@@ -117,8 +299,8 @@ void BellmanScheme::SetStates(int currentPackage){
 			currentPackageStates.push_back(i);
 		SetStates(currentPackage+1);
 	
-		for (auto i = 0; i < currentPackageStates.size(); i++){
-			for (auto j = 0; j < states.size(); j++){
+		for (const auto& i : currentPackageStates){
+			for (unsigned int j = 0; j < states.size(); j++){
 				if (CheckState(currentPackageStates[i], states[j], currentPackage)) {
 					newState[0] = currentPackageStates[i];
 					for (unsigned int k = 1; k <= states[j].size(); k++)
@@ -186,7 +368,7 @@ bool BellmanScheme::CheckState(const int& state, const vector <int>& otherStates
 		}
 	}
 	// if we haven't enough resources, state is not legal
-	if (type && core > data.Resources(type).GetCoresCount()) 
+	if (type && core > data.Resources(type-1).GetCoresCount()) 
 		return false;
 	return true;
 }
@@ -210,9 +392,6 @@ vector <vector<vector<int>>> nextPackageStateNumbers;
 // recursive function for getting controls for one state
 void BellmanScheme::GetControls(const vector<int>& state, int currentPackage){
 	const Workflow &w = data.Workflows(wfNum);
-	if (currentPackage == 0) {
-		oneStateControls.clear();
-	}
 	// index of (type, core) in typesCores array for each package
 	vector <int> currentControl;
 	// (type, core)
@@ -244,7 +423,7 @@ void BellmanScheme::GetControls(const vector<int>& state, int currentPackage){
 		// check possible combinations of types and cores
 		for (unsigned int i = 0; i < r.size(); i++){
 			for (unsigned int j = 0; j < c.size(); j++){
-				// if resourceType[r[i]-1] has enough cores !!! CHECK r[i]
+				// if resourceType[r[i]-1] has enough cores
 				if (c[j] <= data.Resources(r[i]-1).GetCoresCount()){
 					typeCore = make_pair(r[i], c[j]);
 					typeCoreIndex = data.GetTypeCoreIndex(typeCore);
@@ -255,10 +434,10 @@ void BellmanScheme::GetControls(const vector<int>& state, int currentPackage){
 	}
 	// if it is the last package	
 	if (currentPackage == w.GetPackageCount()-1){
-		for (auto i = 0; i < currentControl.size(); i++) {
+		for (const auto& i : currentControl) {
 			// pack currentControl[i] in a vector
 			vector <int> one;
-			one.push_back(currentControl[i]);
+			one.push_back(i);
 			oneStateControls.push_back(move(one));
 		}
 	}
@@ -267,29 +446,29 @@ void BellmanScheme::GetControls(const vector<int>& state, int currentPackage){
 		// check for compatibility
 		vector <vector <int>> newControls;
 		vector <vector <int>> nextPackagesStates;
-		for (unsigned int i = 0; i < currentControl.size(); i++){
+		for (const auto &i : currentControl){
 			for (unsigned int j = 0; j < oneStateControls.size(); j++){
 				vector<int> newControl;
 				vector <int> nextStates;
 				// if currentControl doesn't use resources 
 				// or we have enough resources for currentControl[i]+oneStateControls[j]
-				if (currentControl[i] == -1 || CheckCores(currentControl[i], oneStateControls[j])){
+				if (i == -1 || CheckCores(i, oneStateControls[j])){
 					// first element is currentControl[i]
-					newControl.push_back(currentControl[i]);
+					newControl.push_back(i);
 					// if we should construct nextState
 					if (currentPackage == 0) {
-						if (currentControl[i] == -1) 
+						if (i == -1) 
 							// state is not changed
 							nextStates.push_back(state[currentPackage]);
 						else {
 							// get next state by current state and control (type, core)
 							int nextStateNum = pStates[currentPackage].GetNextStateNum(state[currentPackage], 
-								data.TypesCores(currentControl[i]));
+								data.TypesCores(i));
 							nextStates.push_back(nextStateNum);
 						}
 					}
 					// add other values to newControl
-					for (auto k = 0; k < oneStateControls[j].size(); k++) {
+					for (unsigned k = 0; k < oneStateControls[j].size(); k++) {
 						typeCoreIndex = oneStateControls[j][k];
 						newControl.push_back(typeCoreIndex);
 						if (currentPackage == 0){
@@ -312,8 +491,51 @@ void BellmanScheme::GetControls(const vector<int>& state, int currentPackage){
 			}
 		}
 		oneStateControls = move(newControls);
-		if (currentPackage == 0) 
+		if (currentPackage == 0) {
 			nextPackageStateNumbers.push_back(nextPackagesStates);
+			SetNextStateNumbers();
+			controls.push_back(move(oneStateControls));
+			nextPackageStateNumbers.clear();
+			oneStateControls.clear();
+		}
+	}
+}
+
+// find next state numbers in states according to next packages states
+// additional function for GetControls
+// very long function
+void BellmanScheme::SetNextStateNumbers(){
+	try{
+		// i is also stateNumber
+		for (unsigned int i = 0; i < nextPackageStateNumbers.size(); i++){
+			vector <int> readyNumbers;
+			for (unsigned int j = 0; j < nextPackageStateNumbers[i].size(); j++){
+				vector<vector<int>>::iterator it = find(states.begin()+i, states.end(), nextPackageStateNumbers[i][j]);
+				if (it==states.end()) 
+					throw UserException("SetNextStateNumbers() error: cannot find next state");
+				// find next state number
+				readyNumbers.push_back(distance(states.begin(),it));
+				/*for (int stateIndex = i; stateIndex < states.size(); stateIndex++){
+					bool flag = true;
+					for (int k = 0; k < nextPackageStateNumbers[i][j].size(); k++){
+						if (nextPackageStateNumbers[i][j][k] != states[stateIndex][k]) {
+							flag = false; break;
+						}
+					}
+					if (flag) { 
+						readyNumbers.push_back(stateIndex); break;
+					}
+				}*/
+			}
+		
+			nextStates.push_back(move(readyNumbers));
+		}
+
+	}
+	catch (UserException& e){
+		cout<<"error : " << e.what() <<endl;
+		std::system("pause");
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -321,7 +543,7 @@ void BellmanScheme::GetControls(const vector<int>& state, int currentPackage){
 // package can start execution
 // we should check it after producing next states
 void BellmanScheme::CheckForReadiness(vector<int>& nextStates){
-	for (auto i = 0; i < nextStates.size(); i++){
+	for (unsigned i = 0; i < nextStates.size(); i++){
 		// if package state is equal to (0, 0, -1)
 		if (!data.Workflows(wfNum).IsPackageInit(i) && nextStates[i]==0){
 			bool allPredecessorsReady = true;
@@ -339,6 +561,26 @@ void BellmanScheme::CheckForReadiness(vector<int>& nextStates){
 			if (allPredecessorsReady) nextStates[i]++;
 		}
 	}
+}
+
+
+bool BellmanScheme::CheckCores(const int& currentControl, const vector <int>& otherControls){
+	// reference to typesCores from data
+	const vector<pair<int,int>>& typesCores =  data.TypesCores();
+	// index of resource
+	int resIndex = typesCores[currentControl].first;
+	// resource cores count
+	int resCoresCount = data.Resources(resIndex-1).GetCoresCount();
+	int fullCoresCount = typesCores[currentControl].second;
+	for (unsigned int i = 0; i < otherControls.size(); i++){
+		// if i-th package is executed on resource # resIndex
+		// add its coresCount to fullCoresCount
+		if (otherControls[i]!=-1 && typesCores[otherControls[i]].first == resIndex){
+			fullCoresCount += typesCores[otherControls[i]].second;
+		}
+	}
+	if (fullCoresCount > resCoresCount) return false;
+	return true;
 }
 
 BellmanScheme::~BellmanScheme(void)

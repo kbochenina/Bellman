@@ -14,7 +14,7 @@ public:
 	// return package count
 	inline int GetPackageCount() const { return packages.size(); } 
 	// return execTime of package pNum on resource with type resType and coreCount
-	double GetExecTime(int pNum, int resType, int coreCount) ;
+	double GetExecTime(unsigned pNum, int resType, int coreCount) ;
 	// return vector with possible cores count for package pNum
 	void GetCoresCount(int pNum, vector<int>&out) ;
 	// return vector with possible resource types for package pNum
@@ -22,7 +22,7 @@ public:
 	// return true if package pNum is init
 	bool IsPackageInit(int pNum) const;
 	// return true if first depends on second
-	bool IsDepends(int one, int two) const;
+	bool IsDepends(unsigned one, unsigned two) const;
 	// return matrix[i][j]
 	int GetMatrixValue(int i, int j) const { return matrix[i][j]; }
 	// return vector with packages from which pNum depends (?)

@@ -19,8 +19,6 @@ Scheduler::Scheduler( ModelData& md ): data(md.GetData())
 	methodsSet.resize(data.GetWFCount());
 	maxEff = 0.0;
 	xmlWriter = unique_ptr<ScheduleToXML>(new ScheduleToXML(data));
-	_mkdir("Output");
-	_chdir("Output");
 }
 
 

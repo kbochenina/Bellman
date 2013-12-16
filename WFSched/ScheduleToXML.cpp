@@ -42,14 +42,14 @@ void ScheduleToXML::MetaXMLInfo(ofstream &f){
 void ScheduleToXML::BusyToXML(ofstream &f){
 	int inc = 0;
 	// for each resource type
-	for (int i = 0; i < data.resources.size(); i++){
+	for (unsigned i = 0; i < data.resources.size(); i++){
 		Intervals windows;
 		// get intervals of this resource type
 		data.resources[i].GetCurrentWindows(windows);
 		// get fixed intervals 
 		vector <BusyIntervals> fixed = windows.GetFixedIntervals();
 		// for each resource
-		for (int j = 0; j < fixed.size(); j++){
+		for (unsigned j = 0; j < fixed.size(); j++){
 			// get pointer to resource's intervals
 			BusyIntervals::iterator bIt = fixed[j].begin();
 			// loop on different cores
@@ -94,8 +94,8 @@ void ScheduleToXML::OneWFScheduleToXML(ofstream&f, Schedule &currentSchedule, in
 		//cout << "type=" << type << " cores = " << coresCount << " package = " << packageNum << " ";
 		double execTime = data.workflows[currentWfNum].GetExecTime(packageNum,type+1,coresCount);
 		//cout << execTime << endl;
-		int tEnd = tBegin + execTime;
-		for (int j = 0; j < cores.size(); j++){
+		int tEnd = tBegin + static_cast<int>(execTime);
+		for (unsigned j = 0; j < cores.size(); j++){
 			f << "\t\t<node_statistics>" << endl;
 			f << "\t\t	<node_property name=\"id\" value=\"" << packageNum+1 <<"\"/>" << endl;
 			f << "\t\t	<node_property name=\"type\" value=\"computation\"/>" << endl;

@@ -38,8 +38,18 @@ class BellmanScheme : public SchedulingMethod
 	// (otherStates is already checked)
 	bool CheckState(const int& state, const vector <int>& otherStates, int pNum);
 	void CheckForReadiness(vector<int>& nextStates);
+	// check if we have enough cores to execute currentControl jointly otherControls
+	bool CheckCores(const int& currentControl, const vector <int>& otherControls);
+	// find next state numbers in states according to next packages states
+	void SetNextStateNumbers();
+	// print data to file
+	void PrintData();
+	// print states info to file 
+	void PrintStates();
 	// reading full data from file
 	void ReadData();
+	// read states from file
+	void ReadStates();
 	void BackBellmanProcedure();
 	void GetStageInformation(int stage);
 	// awful function concretizing states or controls

@@ -3,6 +3,8 @@
 #include "UserException.h"
 #include <iostream>
 
+using namespace std;
+
 // move constuctor
 PackageStates::PackageStates(PackageStates&& rhs){
 	//std::cout << "PackageState move constructor\n";
@@ -12,7 +14,7 @@ PackageStates::PackageStates(PackageStates&& rhs){
 
 int PackageStates::GetNextStateNum(int currentState, pair<int,int> typeCore){
 	try{
-		string errCurrentStateNum = "Package::GetNextStateNum() error. Wrong current state num";
+		string errCurrentStateNum = "PackageStates()::GetNextStateNum() error. Wrong current state num";
 		if (currentState < 0 || currentState > fullStates.size()-1) 
 			throw UserException(errCurrentStateNum); 
 		tuples::tuple <int,int, double> fullState = fullStates[currentState];
@@ -35,7 +37,9 @@ int PackageStates::GetNextStateNum(int currentState, pair<int,int> typeCore){
 				if (typeCore.first == fullStates[i].get<0>() && typeCore.second == fullStates[i].get<1>())
 					return i;
 			}
-		throw UserException("Package::GetNextStateNum() error. Current type or core cannot be found in PackageState");
+			// case when execTime(type, core) > delta
+		return fullStates.size()-1;
+		//throw UserException("Package::GetNextStateNum() error. Current type or core cannot be found in PackageState");
 		}
 	}
 	catch (UserException& e){
@@ -47,6 +51,16 @@ int PackageStates::GetNextStateNum(int currentState, pair<int,int> typeCore){
 
 PackageStates::~PackageStates(void)
 {
+}
+
+void PackageStates::PrintStates(ofstream & out){
+	out << "Package # " << pNum << endl;
+	int stateNum = 0;
+	for (auto state : fullStates){
+		out << "State # " << stateNum++ << "\t";
+		out << state.get<0>() << " " << state.get<1>() << " " << state.get<2>() << endl;
+	}
+	out << endl;
 }
 
 

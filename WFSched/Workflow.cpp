@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 
-double Workflow::GetExecTime( int pNum, int type, int cores) {
+double Workflow::GetExecTime( unsigned pNum, int type, int cores) {
 	try{
 		if (pNum < 0 || pNum > packages.size()-1) 
 			throw UserException("Workflow::GetExecTime() error. Wrong packageNum" + to_string(pNum));
@@ -25,7 +25,7 @@ bool Workflow::IsPackageInit(int pNum) const {
 }
 
 // return true if first depends on second
-bool Workflow::IsDepends(int one, int two) const {
+bool Workflow::IsDepends(unsigned one, unsigned two) const {
 	try {
 		string errorMsg = "Workflow::IsDepends() error. Workflow " + to_string(uid) + ", incorrect package num - ";
 		if (one > packages.size()-1) throw errorMsg +  to_string(one);
