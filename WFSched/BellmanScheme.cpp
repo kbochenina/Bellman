@@ -34,8 +34,264 @@ void BellmanScheme::printInfo(){
 }
 
 double BellmanScheme::GetWFSchedule(Schedule &out){
-	
-	return 0.0;
+	BackBellmanProcedure();
+	return DirectBellman();
+}
+
+// back procedure of Bellman's scheme
+void BellmanScheme::BackBellmanProcedure(){
+	int stages = data.GetStages();
+	fullInfo.resize(stages);
+	for (int i = stages-1; i >=0; i--)
+		GetStageInformation(i);
+}
+
+void BellmanScheme::GetStageInformation(int stage){
+	int tbegin = stage * data.GetDelta();
+	int num = 0; // number of correct states for this stage
+	// for all states
+	int statesCount = states.size();
+	fullInfo[stage].resize(statesCount);
+	// for all states
+	for (int i = 0; i < statesCount; i++){
+		stateTimeCores.clear();
+		// number of conditional optimal control
+		int uopt = 0;
+		double maxEff = 0.0; 
+		double stateEff = GetStateEff(i, tbegin);
+		if (FindState(i, tbegin))
+			cout << "Yo Ho Ho" << endl;
+		// ?
+		//AllTimeCore stateTimeCores;
+		//stateTimeCores.resize(data.GetResourceCount());
+		//vector <vector<int>> stateCoresNums; // ((coreNum1, coreNum2,...)-package1, (coreNum1, coreNum2,...)-package2)
+		//stateCoresNums.resize(data.Workflows(wfNum).GetPackageCount());
+		//// if we have right core number for this state
+		//if (FindConcretization(i, -1, stage, stateTimeCores, stateCoresNums)) {
+		//	vector <vector<int>> stateControlCoresNums = stateCoresNums;
+		//	vector<vector<int>>::const_iterator controlsIt = controls[i].begin();
+		//	int controlIndex = 0;
+		//	for (; controlsIt!=controls[i].end(); controlsIt++){
+		//		AllTimeCore controlTimeCores;
+		//		controlTimeCores.resize(data.GetResourceCount());
+		//		if (FindConcretization(i, controlIndex, stage, controlTimeCores,stateControlCoresNums)){
+		//			// if it is the last period
+		//			double currEff = GetEfficiency(stage, stateTimeCores, controlTimeCores);
+		//			if (stage == data.GetStages()-1){
+		//				if (currEff > maxEff){
+		//					maxEff = currEff;
+		//					uopt = controlIndex;
+		//				}
+		//			}
+		//			else {
+		//				double nextEff = fullInfo[stage+1][nextStates[i][controlIndex]].second;
+		//				if (currEff + nextEff > maxEff){
+		//					maxEff = currEff + nextEff;
+		//					uopt = controlIndex;
+		//				}
+		//			}
+		//	
+		//		}
+		//		controlIndex++;
+		//		//?
+		//		ResetBusyIntervals();
+		//	}
+		//	stateCoresNums.clear();
+		//}
+		//fullInfo[stage][i] = make_pair(uopt, maxEff);
+		/*f << uopt << " ";
+		Workflows[currentWfNum]->PrintControl(controls[i][uopt], f);
+		f << nextStateNumbers[i][uopt] << " ";
+		Workflows[currentWfNum]->PrintState(states[nextStateNumbers[i][uopt]], f);*/
+		if (stage==0) break;
+	}		
+}
+
+AllTimeCore stateTimeCores;
+
+// return state eff for the period [tbegin; tbegin + delta]
+double BellmanScheme::GetStateEff(int state, int tbegin){
+	stateTimeCores.resize(data.GetResourceCount());
+	double result = 0.0; 
+	int delta = data.GetDelta();
+	for (int i = 0; i < pStates.size(); i++){
+		int sNum = states[state][i], type = 0;
+		// if package uses resources
+		if (type = pStates[i].GetType(sNum)){
+			int core = pStates[i].GetCore(sNum);
+			double time = data.Workflows(wfNum).GetExecTime(i, type, core);
+			int stages = 0;
+			if (static_cast<int>(time+0.5) % delta == 0) 
+				stages = time / delta;
+			else stages = time / delta + 1;
+			int level = pStates[i].GetLevel(sNum);
+			double realBegin = tbegin - ceil(level*stages)*delta;
+			double realEnd = realBegin + time;
+			double execTime = (realEnd > tbegin + delta) ? delta : realEnd - tbegin;
+			stateTimeCores[type].push_back(make_pair(execTime, core));
+			result += eff->EfficiencyByPeriod(core, tbegin, tbegin+execTime);
+		}
+	}
+	return result; 
+}
+
+// stateTimesCores: 
+// ResourceType1, (2500.0 s, 1 core), (200.5 s, 2 core) etc
+// ResourceType2 etc.
+bool BellmanScheme::FindState(int tbegin){
+	return data.GetResources(stateTimeCores, tbegin);
+}
+
+
+/* parameters:
+state - state number in states
+control - control number. If value = -1, we find a concretization for state
+stage - current stage number, counted from 0
+timeCoresPerType - array of resources types size, each element is a vector of <execTime, numCores> for this type
+				   (received from current state in function SetTimesCoresForState())
+				   Later timeCoresPerType contains PARTICLE times for states (only on current stage)
+					
+packagesCoresNums - out parameter, vector of concrete GLOBAL coreNums after concretising the state
+*/
+//bool BellmanScheme::FindConcretization(int state, int control, int stage, 
+//		AllTimeCore &timeCores, vector <vector<int>> &packagesCoresNums){
+//			try{
+//		if (packagesCoresNums.size()==0) 
+//			throw UserException("BellmanScheme::FindConcretization() error. packagesCoresNums has zero size");
+//		// numbers of packages concretized earlier
+//		vector <int> oldPNums; 
+//		for (auto it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+//			if (it->size()!=0) oldPNums.push_back(distance(packagesCoresNums.begin(), it));
+//		}
+//		vector <vector<int>> packagesIndexesPerType;
+//		packagesIndexesPerType.resize(Resources.size());
+//		
+//		bool isStateConcretized = false;
+//
+//		if (control == -1){
+//			Workflows[currentWfNum]->SetTimesCoresForState(states[state], timeCoresPerType, packagesIndexesPerType);
+//			isStateConcretized = true;
+//		}
+//		else 
+//			Workflows[currentWfNum]->SetTimesCoresForControl(states[state], controls[state][control], timeCoresPerType,
+//			packagesIndexesPerType);
+//
+//		for (vector<vector<int>>::iterator it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+//			// if package also has the concretization
+//			if (it->size()!=0){
+//				// find the package number
+//				int pNum = distance(packagesCoresNums.begin(), it);
+//				// if this package executed on this state
+//				// delete his parameters from input arrays timeCoresPerType and packagesIndexesPerType
+//				for (auto pI = packagesIndexesPerType.begin(); pI!= packagesIndexesPerType.end(); pI++){
+//					int type = distance(packagesIndexesPerType.begin(), pI);
+//					auto findIt = find(pI->begin(),pI->end(), pNum);
+//					if (findIt!=pI->end()){
+//						int index = distance(pI->begin(), findIt);
+//						timeCores[type].erase(timeCores[type].begin()+index,
+//							timeCores[type].begin()+index+1);
+//						packagesIndexesPerType[type].erase(packagesIndexesPerType[type].begin()+index,
+//							packagesIndexesPerType[type].begin()+index+1);
+//					}
+//				}
+//			}
+//		}
+//
+//		AllTimeCore::iterator tCit = timeCores.begin();
+//		unsigned int typeIndex = 0; 
+//		unsigned int inc = 0;
+//		for (;tCit != timeCores.end(); tCit++){
+//			if (tCit->size()!=0){
+//				vector <vector<int>> oneTypeCoreNums;
+//				// oneTypeCoreNums contains LOCAL core numbers for type typeindex
+//				bool checkType = Resources[typeIndex]->Check(*tCit, stage, oneTypeCoreNums, isStateConcretized);
+//				if (checkType == false) return checkType;
+//				int packageIndex = 0;
+//				// for each packages indexes for this type
+//				for (vector<int>::iterator indexIt = packagesIndexesPerType[typeIndex].begin();
+//					indexIt!=packagesIndexesPerType[typeIndex].end(); indexIt++){
+//					auto coresIt = std::begin(oneTypeCoreNums[packageIndex]);
+//					// find global core numbers
+//					//CoresLocalToGlobal(typeIndex, oneTypeCoreNums[packageIndex]);
+//					for (; coresIt!= std::end(oneTypeCoreNums[packageIndex]); coresIt++)
+//						*coresIt += inc;
+//					// concretizing the package
+//					packagesCoresNums[*indexIt] = oneTypeCoreNums[packageIndex];
+//					packageIndex++;
+//				}
+//			}
+//			inc += Resources[typeIndex]->GetCoresCount();
+//			typeIndex++;	
+//		}
+//
+//		// add diaps for new concretized packages
+//		for (auto it = packagesCoresNums.begin(); it!= packagesCoresNums.end(); it++){
+//			int pNum = distance(packagesCoresNums.begin(), it);
+//			// if package was concretized now
+//			if (it->size()!=0 && find(oldPNums.begin(), oldPNums.end(),pNum)==oldPNums.end()){
+//				// if we concretize a state
+//				int stageBegin = -1;
+//				double execTime = -1;
+//				int type = -1;
+//				if (control  == -1){
+//					execTime = Workflows[currentWfNum]->GetExecTime(pNum, states[state][pNum]);
+//					stageBegin = stage - (int)execTime/delta;
+//					if ((int)execTime%delta==0) {
+//						stageBegin++;
+//					}
+//					type = GetResourceType((*it)[0]);
+//					
+//				}
+//				else {
+//					int c = controls[state][control][pNum];
+//					if (c > typesCores.size()-1) throw UserException("FindConcretization() : wrong control value");
+//					type = typesCores[c].first-1;
+//					int cores = typesCores[c].second;
+//					execTime = Workflows[currentWfNum]->GetExecTime(pNum, type + 1, cores);
+//					stageBegin = stage;
+//				}
+//				int stageCount = execTime/delta + 1;
+//				vector <int> localCores;
+//				int dec = GetResourceTypeBeginIndex(type);
+//				for (auto coresIt = it->begin(); coresIt != it->end(); coresIt++){
+//					localCores.push_back(*coresIt-dec);
+//				}
+//				Resources[type]->AddDiaps(stageBegin,execTime, localCores);
+//			}
+//		}
+//
+//		tCit = timeCoresPerType.begin();
+//		// find the PARTICLE times for states/controls (times only on current stage)
+//		for (;tCit != timeCoresPerType.end(); tCit++){
+//			if (tCit->size()!=0){
+//				for (vector<pair<double, unsigned int>>::iterator pairsIt = tCit->begin(); pairsIt!=tCit->end(); pairsIt++){
+//					if (pairsIt->first > delta){
+//						if (control == -1){
+//							int fullBusyStages = pairsIt->first/delta;
+//							pairsIt->first -= fullBusyStages*delta;
+//						}
+//						else {
+//							pairsIt->first = delta;
+//						}
+//					}
+//				}
+//			}
+//		}
+//		return true;
+//	}
+//	catch (UserException& e){
+//		cout<<"error : " << e.what() <<endl;
+//		std::system("pause");
+//		exit(EXIT_FAILURE);
+//	}
+//
+//}
+
+// direct procedure of Bellman
+double BellmanScheme::DirectBellman(){
+	double eff = 0.0;
+
+	return eff;
 }
 
 void BellmanScheme::SetData(){

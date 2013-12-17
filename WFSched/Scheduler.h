@@ -1,5 +1,6 @@
 #include "ModelData.h"
 #include "ScheduleToXML.h"
+#include "Efficiency.h"
 #include <memory>
 
 #pragma once
@@ -20,6 +21,8 @@ class Scheduler
 	double maxEff;
 	// numbers of already scheduled WFs
 	vector<int> scheduledWFs;
+	// efficiency function member
+	unique_ptr<Efficiency> eff;
 	// OPERATIONS
 	// classical staged scheme
 	void StagedScheme(int initWfNum);

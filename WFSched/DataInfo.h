@@ -5,6 +5,8 @@
 
 using namespace std;
 
+typedef vector <TimeCore> AllTimeCore;
+
 #pragma once
 class DataInfo
 {
@@ -57,10 +59,13 @@ public:
 	const vector<pair<int,int>> & TypesCores() const {return typesCores;}
 	const pair<int,int>& TypesCores(int index) const ;
 	int GetDelta() {return context.GetDelta();}
+	int GetStages() {return context.GetStages();}
 	// get initial core index of resource type
 	int GetInitResourceTypeIndex(int type);
 	// do the same
 	int GetTypeCoreIndex(const pair<int,int>& typeCore);
+	// find if we have enough resources as in timeCore from moment tbegin
+	bool GetResources(AllTimeCore & timeCore, int tBegin);
 	~DataInfo(void);
 };
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 
-double Workflow::GetExecTime( unsigned pNum, int type, int cores) {
+double Workflow::GetExecTime ( unsigned pNum, int type, int cores) const {
 	try{
 		if (pNum < 0 || pNum > packages.size()-1) 
 			throw UserException("Workflow::GetExecTime() error. Wrong packageNum" + to_string(pNum));

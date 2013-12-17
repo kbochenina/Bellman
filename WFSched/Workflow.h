@@ -14,7 +14,7 @@ public:
 	// return package count
 	inline int GetPackageCount() const { return packages.size(); } 
 	// return execTime of package pNum on resource with type resType and coreCount
-	double GetExecTime(unsigned pNum, int resType, int coreCount) ;
+	double GetExecTime (unsigned pNum, int resType, int coreCount) const ;
 	// return vector with possible cores count for package pNum
 	void GetCoresCount(int pNum, vector<int>&out) ;
 	// return vector with possible resource types for package pNum

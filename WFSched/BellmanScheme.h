@@ -4,7 +4,7 @@
 typedef pair <int, double> StateInformation; // (number of optimal control, max eff on this state)
 typedef vector <StateInformation> StageInformation;
 typedef vector <StageInformation> BackBellmanInfo;
-typedef vector <TimeCore> AllTimeCore;
+
 
 #pragma once
 class BellmanScheme : public SchedulingMethod
@@ -51,13 +51,18 @@ class BellmanScheme : public SchedulingMethod
 	// read states from file
 	void ReadStates();
 	void BackBellmanProcedure();
+	// direct dynamic programming procedure
+	double DirectBellman();
 	void GetStageInformation(int stage);
 	// awful function concretizing states or controls
 	bool FindConcretization(int state, int control, int stage, 
-		AllTimeCore timeCores, vector <vector<int>> packagesCoresNums);
+		AllTimeCore &timeCores, vector <vector<int>> &packagesCoresNums);
 	// additional eff function for using in GetStageInformation() function
 	double GetEfficiency(int state, int control, int stage);
-	void DirectBellman();
+	double GetStateEff(int state, int tbegin);
+	// if concretization for state exists
+	// function changes current states
+	bool FindState(int tbegin);
 	void printInfo();
 public:
 	BellmanScheme(DataInfo &d,int u, int w);
